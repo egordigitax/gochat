@@ -1,12 +1,12 @@
-package infra
+package services
 
 import (
-	"chat-service/internal/application/services"
 	"chat-service/internal/domain"
-	"github.com/gorilla/websocket"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 type ChatsHub struct {
@@ -14,11 +14,11 @@ type ChatsHub struct {
 	broadcast  chan domain.Message
 	register   chan *ChatsClient
 	unregister chan *ChatsClient
-	messages   *services.MessageService
+	messages   *MessageService
 	mu         sync.RWMutex
 }
 
-func NewChatsHub(messagesService *services.MessageService) *ChatsHub {
+func NewChatsHub(messagesService *MessageService) *ChatsHub {
 	return &ChatsHub{
 		clients:    make(map[string]*ChatsClient),
 		broadcast:  make(chan domain.Message, 1),
@@ -44,7 +44,7 @@ func (h *ChatsHub) Run() {
 					default:
 						chats, err := h.messages.GetChatsList(client.UserID)
 						if err != nil {
-                            log.Println(err)
+							log.Println(err)
 							return
 						}
 						h.clients[client.UserID].Send <- chats
@@ -77,7 +77,7 @@ type ChatsClient struct {
 	Hub    *ChatsHub
 	Conn   *websocket.Conn
 	UserID string
-	Send   chan []domain.ChatInfo
+	Send   chan []domain.Chat
 	Done   chan struct{}
 }
 

@@ -2,9 +2,8 @@ package main
 
 import (
 	"chat-service/internal/api/utils"
-	"chat-service/internal/api/wsApi"
+	"chat-service/internal/api/ws_api"
 	"chat-service/internal/application/services"
-	"chat-service/internal/infra"
 	"chat-service/internal/infra/databases/postgres"
 	"chat-service/internal/infra/databases/postgres/postgres_repos"
 	"chat-service/internal/infra/memory"
@@ -31,29 +30,33 @@ func main() {
 	}
 
 	redisClient := memory.NewRedisClient()
-	redisMessagesRepo := redis_repos.NewRedisMessagesRepo(redisClient)
+	MessagesCache := redis_repos.NewRedisMessagesCache(redisClient)
+	ChatsCache := redis_repos.NewRedisChatsCache(redisClient)
 
 	postgresClient := postgres.NewPostgresClient()
-	postgresMessagesRepo := postgres_repos.NewPGMessagesRepository(postgresClient)
+	MessagesStorage := postgres_repos.NewPGMessagesStorage(postgresClient)
+	ChatsStorage := postgres_repos.NewPGChatsStorage(postgresClient)
 
 	messagesService := services.NewMessageService(
-		postgresMessagesRepo,
-		redisMessagesRepo,
+		MessagesStorage,
+		MessagesCache,
+		ChatsStorage,
+		ChatsCache,
 	)
 
-	hub := infra.NewHub(postgresMessagesRepo)
+	hub := services.NewHub(MessagesStorage)
 
-	chatsHub := infra.NewChatsHub(messagesService)
+	chatsHub := services.NewChatsHub(messagesService)
 
 	go chatsHub.Run()
 	go hub.Run()
 
 	http.HandleFunc("/chat", func(w http.ResponseWriter, r *http.Request) {
-		wsApi.ServeWebSocket(hub, w, r)
+		ws_api.ServeWebSocket(hub, w, r)
 	})
 
 	http.HandleFunc("/chatlist", func(w http.ResponseWriter, r *http.Request) {
-		wsApi.ServeMainWebSocket(chatsHub, w, r)
+		ws_api.ServeMainWebSocket(chatsHub, w, r)
 	})
 
 	log.Println("Server started on :8080")

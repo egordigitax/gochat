@@ -6,13 +6,3 @@ type Message struct {
 	Text      string `json:"text" db:"message"`
 	CreatedAt string `json:"created_at" db:"created_at"`
 }
-
-type ChatInfo struct {
-	Message
-	Title    string `json:"title" db:"title"`
-	ImageURL string `json:"image_url" db:"image_url"`
-}
-
-type LastMessagesList struct {
-	Chats []ChatInfo
-}

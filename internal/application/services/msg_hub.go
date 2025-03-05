@@ -1,28 +1,30 @@
-package infra
+package services
 
 import (
 	"chat-service/internal/domain"
+	"chat-service/internal/domain/interfaces"
 	"log"
 	"sync"
+
 	"github.com/gorilla/websocket"
 )
 
 type Hub struct {
-	clients    map[string]map[string]*Client
-	broadcast  chan domain.Message
-	register   chan *Client
-	unregister chan *Client
-	repo       domain.ChatRepository
-	mu         sync.RWMutex
+	clients         map[string]map[string]*Client
+	broadcast       chan domain.Message
+	register        chan *Client
+	unregister      chan *Client
+	messagesStorage interfaces.MessagesStorage
+	mu              sync.RWMutex
 }
 
-func NewHub(repo domain.ChatRepository) *Hub {
+func NewHub(repo interfaces.MessagesStorage) *Hub {
 	return &Hub{
-		clients:    make(map[string]map[string]*Client),
-		broadcast:  make(chan domain.Message, 100),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		repo:       repo,
+		clients:         make(map[string]map[string]*Client),
+		broadcast:       make(chan domain.Message, 100),
+		register:        make(chan *Client),
+		unregister:      make(chan *Client),
+		messagesStorage: repo,
 	}
 }
 
@@ -40,7 +42,7 @@ func (h *Hub) Run() {
 		case message := <-h.broadcast:
 			log.Printf("[INFO] Broadcasting message in chat=%s: %s", message.ChatID, message.Text)
 			h.sendMessage(message)
-			go h.repo.SaveMessage(message)
+			go h.messagesStorage.SaveMessage(message)
 		}
 	}
 }
