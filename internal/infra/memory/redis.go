@@ -8,7 +8,7 @@ import (
 )
 
 type RedisClient struct {
-	rdb *redis.Client
+	Rdb *redis.Client
 }
 
 func NewRedisClient() *RedisClient {
@@ -38,6 +38,6 @@ func NewRedisClient() *RedisClient {
 	log.Println("key:", val)
 
 	return &RedisClient{
-		rdb: rdb,
+		Rdb: rdb,
 	}
 }

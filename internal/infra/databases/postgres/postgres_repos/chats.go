@@ -3,6 +3,7 @@ package postgres_repos
 import (
 	"chat-service/internal/domain"
 	"chat-service/internal/infra/databases/postgres"
+	"github.com/lib/pq"
 	"log"
 )
 
@@ -24,30 +25,109 @@ func (m *PGChatsStorage) GetUsersChats(
 	offset int,
 ) ([]domain.Chat, error) {
 	var chats []domain.Chat
-	log.Println(user_uid)
 	query := `
-        SELECT 
-            uc.user_uid,
-            uc.chat_uid,
-            uc.message,
-            uc.created_at,
-            u.nickname as title,
-            coalesce('', '') as image_url
-        FROM 
-            users_messages uc
-        JOIN users u 
-            ON u.uid = uc.user_uid
-        WHERE 
-            uc.user_uid = $1
+    SELECT 
+        uc.id,
+        uc.title,
+        COALESCE(uc.media_url, '') AS media_url,
+        uc.users_uids,
+        uc.updated_at,
+        uc.uid,
+        uc.chat_type
+    FROM users_chats uc
+    JOIN users u 
+        ON u.uid = ANY(uc.users_uids)
+    WHERE u.uid = $1
+    LIMIT $2 OFFSET $3;
     `
 
-	err := m.postgresClient.C_RO.Select(&chats, query, user_uid)
+	rows, err := m.postgresClient.C_RO.Query(query, user_uid, limit, offset)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
-	log.Println(chats)
+	defer rows.Close()
+
+	for rows.Next() {
+		chat := domain.Chat{}
+		err := rows.Scan(
+			&chat.Id,
+			&chat.Title,
+			&chat.MediaURL,
+			pq.Array(&chat.UsersUids),
+			&chat.UpdatedAt,
+			&chat.Uid,
+			&chat.ChatType,
+		)
+		chats = append(chats, chat)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = m.FetchChatsLastMessages(&chats)
+	if err != nil {
+		return nil, err
+	}
 
 	return chats, nil
 }
+
+func (m *PGChatsStorage) FetchChatsLastMessages(chats *[]domain.Chat) error {
+	if len(*chats) == 0 {
+		return nil
+	}
+
+	chatIDs := make([]string, len(*chats))
+	for i, chat := range *chats {
+		chatIDs[i] = chat.Uid
+	}
+
+	query := `
+    SELECT DISTINCT ON (ucm.chat_uid) 
+        ucm.chat_uid, 
+        ucm.text,
+        ucm.created_at,
+        u.nickname
+    FROM users_chats_messages ucm
+    JOIN users u ON ucm.user_uid = u.uid
+    WHERE ucm.chat_uid = ANY($1)
+    ORDER BY ucm.chat_uid, ucm.created_at DESC;
+    `
+
+	rows, err := m.postgresClient.C_RO.Query(query, pq.Array(chatIDs))
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	lastMessages := make(map[string]domain.Message, len(*chats))
+
+	for rows.Next() {
+		var message domain.Message
+		if err := rows.Scan(
+			&message.ChatUid,
+			&message.Text,
+            &message.CreatedAt,
+            &message.UserInfo.Nickname,
+		); err != nil {
+			return err
+		}
+		lastMessages[message.ChatUid] = message
+	}
+
+	for i := range *chats {
+		if msg, exists := lastMessages[(*chats)[i].Uid]; exists {
+			(*chats)[i].LastMessage = msg
+		}
+	}
+
+	return rows.Err()
+}
+
+//
+// func (m *PGChatsStorage) CreateNewChat(chat domain.Chat) (string, error) {
+//
+// }

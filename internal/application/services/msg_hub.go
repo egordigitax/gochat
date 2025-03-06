@@ -31,14 +31,14 @@ func (h *Hub) Run() {
 		select {
 		case client := <-h.register:
 			h.addClient(client)
-			log.Printf("[INFO] New client joined: user=%s, chat=%s", client.UserID, client.ChatID)
+			log.Printf("[INFO] New client joined: user=%s, chat=%s", client.UserUid, client.ChatUid)
 
 		case client := <-h.unregister:
 			h.removeClient(client)
-			log.Printf("[INFO] Client left: user=%s, chat=%s", client.UserID, client.ChatID)
+			log.Printf("[INFO] Client left: user=%s, chat=%s", client.UserUid, client.ChatUid)
 
 		case message := <-h.broadcast:
-			log.Printf("[INFO] Broadcasting message in chat=%s: %s", message.ChatID, message.Text)
+			log.Printf("[INFO] Broadcasting message in chat=%s: %s", message.ChatUid, message.Text)
 			h.sendMessage(message)
 			go h.messagesStorage.SaveMessage(message)
 		}
@@ -56,17 +56,17 @@ func (h *Hub) UnregisterClient(client *Client) {
 func (h *Hub) addClient(client *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if h.clients[client.ChatID] == nil {
-		h.clients[client.ChatID] = make(map[string]*Client)
+	if h.clients[client.ChatUid] == nil {
+		h.clients[client.ChatUid] = make(map[string]*Client)
 	}
-	h.clients[client.ChatID][client.UserID] = client
+	h.clients[client.ChatUid][client.UserUid] = client
 }
 
 func (h *Hub) removeClient(client *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if _, ok := h.clients[client.ChatID][client.UserID]; ok {
-		delete(h.clients[client.ChatID], client.UserID)
+	if _, ok := h.clients[client.ChatUid][client.UserUid]; ok {
+		delete(h.clients[client.ChatUid], client.UserUid)
 		close(client.Send)
 	}
 }
@@ -74,22 +74,22 @@ func (h *Hub) removeClient(client *Client) {
 func (h *Hub) sendMessage(message domain.Message) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	for _, client := range h.clients[message.ChatID] {
+	for _, client := range h.clients[message.ChatUid] {
 		select {
 		case client.Send <- message:
 		default:
 			close(client.Send)
-			delete(h.clients[message.ChatID], client.UserID)
+			delete(h.clients[message.ChatUid], client.UserUid)
 		}
 	}
 }
 
 type Client struct {
-	Hub    *Hub
-	Conn   interfaces.ClientTransport
-	UserID string
-	ChatID string
-	Send   chan domain.Message
+	Hub     *Hub
+	Conn    interfaces.ClientTransport
+	UserUid string
+	ChatUid string
+	Send    chan domain.Message
 }
 
 func (c *Client) ReadPump() {
@@ -106,10 +106,10 @@ func (c *Client) ReadPump() {
 			break
 		}
 
-		log.Printf("[INFO] Received message from %s in chat %s: %s", c.UserID, c.ChatID, msg.Text)
+		log.Printf("[INFO] Received message from %s in chat %s: %s", c.UserUid, c.ChatUid, msg.Text)
 
-		msg.UserID = c.UserID
-		msg.ChatID = c.ChatID
+		msg.UserUid = c.UserUid
+		msg.ChatUid = c.ChatUid
 
 		c.Hub.broadcast <- msg
 	}

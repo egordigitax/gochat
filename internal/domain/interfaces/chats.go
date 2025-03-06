@@ -16,4 +16,8 @@ type ChatsCache interface {
 		limit int,
 		offset int,
 	) ([]domain.Chat, error)
+	SetUsersChats(
+		user_uid string,
+		chats []domain.Chat,
+	) error
 }

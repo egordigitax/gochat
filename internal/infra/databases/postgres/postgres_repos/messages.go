@@ -24,10 +24,17 @@ func (m PGMessagesStorage) GetMessages(
 
 	var messages []domain.Message
 	query := `
-    SELECT message, user_uid, chat_uid FROM users_messages WHERE chat_uid = $1
+    SELECT 
+        text, 
+        user_uid, 
+        chat_uid,
+        created_at,
+        uid,
+    FROM users_chats_messages 
+    WHERE chat_uid = $1 LIMIT $2;
     `
 
-	err := m.postgresClient.C_RO.Select(&messages, query, chat_uid)
+	err := m.postgresClient.C_RO.Select(&messages, query, chat_uid, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -38,15 +45,15 @@ func (m PGMessagesStorage) GetMessages(
 
 func (m PGMessagesStorage) SaveMessage(msg domain.Message) error {
 	query := `
-    INSERT INTO users_messages (message, user_uid, chat_uid)
+    INSERT INTO users_chats_messages (text, user_uid, chat_uid)
     VALUES ($1, $2, $3);
     `
 
 	_, err := m.postgresClient.C_RW.Exec(
 		query,
 		msg.Text,
-		msg.UserID,
-		msg.ChatID,
+		msg.UserUid,
+		msg.ChatUid,
 	)
 	if err != nil {
 		return err

@@ -33,8 +33,8 @@ func ServeWebSocket(hub *services.Hub, w http.ResponseWriter, r *http.Request) {
 	client := &services.Client{
 		Hub:    hub,
 		Conn:   conn,
-		UserID: userID,
-		ChatID: chatID,
+		UserUid: userID,
+		ChatUid: chatID,
 		Send:   make(chan domain.Message, 10),
 	}
 

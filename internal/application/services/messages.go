@@ -34,3 +34,11 @@ func (m *MessageService) GetChatsList(user_uid string) ([]domain.Chat, error) {
 
 	return msgs, nil
 }
+
+func (m *MessageService) CreateNewChat(
+	title string,
+	chat_type string,
+	media_url string,
+	users_uids []string,
+) {
+}
