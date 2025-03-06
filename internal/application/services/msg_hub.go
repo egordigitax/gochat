@@ -5,8 +5,6 @@ import (
 	"chat-service/internal/domain/interfaces"
 	"log"
 	"sync"
-
-	"github.com/gorilla/websocket"
 )
 
 type Hub struct {
@@ -88,7 +86,7 @@ func (h *Hub) sendMessage(message domain.Message) {
 
 type Client struct {
 	Hub    *Hub
-	Conn   *websocket.Conn
+	Conn   interfaces.ClientTransport
 	UserID string
 	ChatID string
 	Send   chan domain.Message

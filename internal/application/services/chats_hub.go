@@ -2,11 +2,10 @@ package services
 
 import (
 	"chat-service/internal/domain"
+	"chat-service/internal/domain/interfaces"
 	"log"
 	"sync"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 type ChatsHub struct {
@@ -75,7 +74,7 @@ func (h *ChatsHub) UnregisterClient(client *ChatsClient) {
 
 type ChatsClient struct {
 	Hub    *ChatsHub
-	Conn   *websocket.Conn
+	Conn   interfaces.ClientTransport
 	UserID string
 	Send   chan []domain.Chat
 	Done   chan struct{}

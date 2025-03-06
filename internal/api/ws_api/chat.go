@@ -6,15 +6,7 @@ import (
 	"chat-service/internal/domain"
 	"log"
 	"net/http"
-
-	"github.com/gorilla/websocket"
 )
-
-// TODO: Remove CheckOrigin true
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	}}
 
 func ServeWebSocket(hub *services.Hub, w http.ResponseWriter, r *http.Request) {
 	userID, err := utils.GetUserIDFromHeader(
