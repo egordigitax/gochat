@@ -7,16 +7,16 @@ import (
 
 type MessageService struct {
 	MessagesStorage interfaces.MessagesStorage
-	MessagesCache   interfaces.MessagesStorage
+	MessagesCache   interfaces.MessagesCache
 	ChatsStorage    interfaces.ChatsStorage
-	ChatsCache      interfaces.ChatsStorage
+	ChatsCache      interfaces.ChatsCache
 }
 
 func NewMessageService(
 	messagesStorage interfaces.MessagesStorage,
-	messagesCache interfaces.MessagesStorage,
+	messagesCache interfaces.MessagesCache,
 	chatsStorage interfaces.ChatsStorage,
-	chatsCache interfaces.ChatsStorage,
+	chatsCache interfaces.ChatsCache,
 ) *MessageService {
 	return &MessageService{
 		MessagesStorage: messagesStorage,

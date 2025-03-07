@@ -110,8 +110,8 @@ func (m *PGChatsStorage) FetchChatsLastMessages(chats *[]domain.Chat) error {
 		if err := rows.Scan(
 			&message.ChatUid,
 			&message.Text,
-            &message.CreatedAt,
-            &message.UserInfo.Nickname,
+			&message.CreatedAt,
+			&message.UserInfo.Nickname,
 		); err != nil {
 			return err
 		}
@@ -125,6 +125,28 @@ func (m *PGChatsStorage) FetchChatsLastMessages(chats *[]domain.Chat) error {
 	}
 
 	return rows.Err()
+}
+
+func (m *PGChatsStorage) CheckIfUserHasAccess(
+	user_uid string,
+	chat_uid string,
+) (bool, error) {
+	query := `
+    SELECT EXISTS (
+        SELECT 1 FROM users_chats 
+        WHERE chat_uid = $1 
+        AND $2 = ANY(users_uids)
+    );`
+
+	var isAccess bool
+	err := m.postgresClient.C_RO.Get(
+		&isAccess,
+		query,
+		chat_uid,
+		user_uid,
+	)
+
+	return isAccess, err
 }
 
 //

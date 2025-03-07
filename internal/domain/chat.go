@@ -16,3 +16,5 @@ type Chat struct {
 	ChatType    ChatType `json:"chat_type" db:"chat_type"`
 	LastMessage Message  `json:"last_message" db:"last_message"`
 }
+
+type ChatUid string

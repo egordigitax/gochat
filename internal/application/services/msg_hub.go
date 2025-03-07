@@ -40,7 +40,7 @@ func (h *Hub) Run() {
 		case message := <-h.broadcast:
 			log.Printf("[INFO] Broadcasting message in chat=%s: %s", message.ChatUid, message.Text)
 			h.sendMessage(message)
-			go h.messagesStorage.SaveMessage(message)
+            go h.messagesStorage.SaveMessage(message)
 		}
 	}
 }
@@ -101,6 +101,7 @@ func (c *Client) ReadPump() {
 	for {
 		var msg domain.Message
 		err := c.Conn.ReadJSON(&msg)
+
 		if err != nil {
 			log.Println("[ERROR] WebSocket Read:", err)
 			break

@@ -21,8 +21,8 @@ func (m PGMessagesStorage) GetMessages(
 	chat_uid string,
 	limit int, offset int,
 ) ([]domain.Message, error) {
-
 	var messages []domain.Message
+
 	query := `
     SELECT 
         text, 
@@ -34,19 +34,23 @@ func (m PGMessagesStorage) GetMessages(
     WHERE chat_uid = $1 LIMIT $2;
     `
 
-	err := m.postgresClient.C_RO.Select(&messages, query, chat_uid, limit)
+	err := m.postgresClient.C_RO.Select(
+		&messages,
+		query,
+		chat_uid,
+		limit,
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	return messages, nil
-
 }
 
 func (m PGMessagesStorage) SaveMessage(msg domain.Message) error {
 	query := `
     INSERT INTO users_chats_messages (text, user_uid, chat_uid)
-    VALUES ($1, $2, $3);
+    SELECT $1, $2, $3
     `
 
 	_, err := m.postgresClient.C_RW.Exec(
@@ -55,6 +59,7 @@ func (m PGMessagesStorage) SaveMessage(msg domain.Message) error {
 		msg.UserUid,
 		msg.ChatUid,
 	)
+
 	if err != nil {
 		return err
 	}

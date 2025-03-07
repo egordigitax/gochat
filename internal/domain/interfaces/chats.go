@@ -8,6 +8,10 @@ type ChatsStorage interface {
 		limit int,
 		offset int,
 	) ([]domain.Chat, error)
+	CheckIfUserHasAccess(
+		user_uid string,
+		chat_uid string,
+	) (bool, error)
 }
 
 type ChatsCache interface {
