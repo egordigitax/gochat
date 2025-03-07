@@ -1,4 +1,4 @@
-package services
+package hubs
 
 import (
 	"chat-service/internal/domain"
@@ -7,26 +7,27 @@ import (
 	"sync"
 )
 
-type Hub struct {
-	clients         map[string]map[string]*Client
+type MessagesHub struct {
+    //                [ChatUid]   [UserUid]
+	clients         map[string]map[string]*MessagesClient
 	broadcast       chan domain.Message
-	register        chan *Client
-	unregister      chan *Client
+	register        chan *MessagesClient
+	unregister      chan *MessagesClient
 	messagesStorage interfaces.MessagesStorage
 	mu              sync.RWMutex
 }
 
-func NewHub(repo interfaces.MessagesStorage) *Hub {
-	return &Hub{
-		clients:         make(map[string]map[string]*Client),
+func NewMessagesHub(repo interfaces.MessagesStorage) *MessagesHub {
+	return &MessagesHub{
+		clients:         make(map[string]map[string]*MessagesClient),
 		broadcast:       make(chan domain.Message, 100),
-		register:        make(chan *Client),
-		unregister:      make(chan *Client),
+		register:        make(chan *MessagesClient),
+		unregister:      make(chan *MessagesClient),
 		messagesStorage: repo,
 	}
 }
 
-func (h *Hub) Run() {
+func (h *MessagesHub) Run() {
 	for {
 		select {
 		case client := <-h.register:
@@ -45,24 +46,25 @@ func (h *Hub) Run() {
 	}
 }
 
-func (h *Hub) RegisterClient(client *Client) {
+func (h *MessagesHub) RegisterClient(client *MessagesClient) {
+    //TODO: Check if client has access to this chat
 	h.register <- client
 }
 
-func (h *Hub) UnregisterClient(client *Client) {
+func (h *MessagesHub) UnregisterClient(client *MessagesClient) {
 	h.unregister <- client
 }
 
-func (h *Hub) addClient(client *Client) {
+func (h *MessagesHub) addClient(client *MessagesClient) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if h.clients[client.ChatUid] == nil {
-		h.clients[client.ChatUid] = make(map[string]*Client)
+		h.clients[client.ChatUid] = make(map[string]*MessagesClient)
 	}
 	h.clients[client.ChatUid][client.UserUid] = client
 }
 
-func (h *Hub) removeClient(client *Client) {
+func (h *MessagesHub) removeClient(client *MessagesClient) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if _, ok := h.clients[client.ChatUid][client.UserUid]; ok {
@@ -71,7 +73,7 @@ func (h *Hub) removeClient(client *Client) {
 	}
 }
 
-func (h *Hub) sendMessage(message domain.Message) {
+func (h *MessagesHub) sendMessage(message domain.Message) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	for _, client := range h.clients[message.ChatUid] {
@@ -84,15 +86,15 @@ func (h *Hub) sendMessage(message domain.Message) {
 	}
 }
 
-type Client struct {
-	Hub     *Hub
+type MessagesClient struct {
+	Hub     *MessagesHub
 	Conn    interfaces.ClientTransport
 	UserUid string
 	ChatUid string
 	Send    chan domain.Message
 }
 
-func (c *Client) ReadPump() {
+func (c *MessagesClient) ReadPump() {
 	defer func() {
 		c.Hub.unregister <- c
 		c.Conn.Close()
@@ -116,7 +118,7 @@ func (c *Client) ReadPump() {
 	}
 }
 
-func (c *Client) WritePump() {
+func (c *MessagesClient) WritePump() {
 	for msg := range c.Send {
 		if err := c.Conn.WriteJSON(msg); err != nil {
 			break

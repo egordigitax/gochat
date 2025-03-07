@@ -2,6 +2,10 @@ package interfaces
 
 import "chat-service/internal/domain"
 
+type MessageService interface {
+
+}
+
 type MessagesStorage interface {
 	GetMessages(
 		chat_uid string,

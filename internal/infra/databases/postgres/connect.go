@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -28,7 +27,7 @@ func NewPostgresClient() *PostgresClient {
 	client.C_RO.SetConnMaxLifetime(60 * time.Second)
 	client.C_RW.SetConnMaxLifetime(60 * time.Second)
 
-	log.Println(fmt.Println("PostgresDB connected"))
+	log.Println("PostgresDB connected")
 	return client
 }
 
@@ -45,5 +44,5 @@ func (c *PostgresClient) Close() {
 	if err := c.C_RW.Close(); err != nil {
 		log.Fatal(err)
 	}
-	log.Println(fmt.Println("PostgresDB disconnected"))
+	log.Println("PostgresDB disconnected")
 }

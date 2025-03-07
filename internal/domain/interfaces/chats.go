@@ -2,6 +2,13 @@ package interfaces
 
 import "chat-service/internal/domain"
 
+type ChatsService interface {
+	CheckIfUserHasAccess(
+		user_uid string,
+		chat_uid string,
+	) (bool, error)
+}
+
 type ChatsStorage interface {
 	GetUsersChats(
 		user_uid string,

@@ -3,6 +3,7 @@ package main
 import (
 	"chat-service/internal/api/utils"
 	"chat-service/internal/api/ws_api"
+	"chat-service/internal/application/hubs"
 	"chat-service/internal/application/services"
 	"chat-service/internal/infra/databases/postgres"
 	"chat-service/internal/infra/databases/postgres/postgres_repos"
@@ -17,7 +18,7 @@ import (
 )
 
 func main() {
-	fmt.Println(utils.GenerateJWT("6328040e-6a50-49b3-92fc-4d31e53c2dab"))
+	fmt.Println(utils.GenerateJWT("51929f93-fd17-4e9d-b38c-31f4c26fa51c"))
 
 	if os.Getenv("SWAGGER_HOST") == "" {
 		log.Println("Load ENV from file")
@@ -40,19 +41,22 @@ func main() {
 	messagesService := services.NewMessageService(
 		MessagesStorage,
 		MessagesCache,
+	)
+
+	chatsService := services.NewChatsService(
 		ChatsStorage,
 		ChatsCache,
 	)
 
-	hub := services.NewHub(MessagesStorage)
+	messagesHub := hubs.NewMessagesHub(MessagesStorage)
 
-	chatsHub := services.NewChatsHub(messagesService)
+	chatsHub := hubs.NewChatsHub(messagesService, chatsService)
 
 	go chatsHub.Run()
-	go hub.Run()
+	go messagesHub.Run()
 
 	http.HandleFunc("/chat", func(w http.ResponseWriter, r *http.Request) {
-		ws_api.ServeWebSocket(hub, w, r)
+		ws_api.ServeWebSocket(messagesHub, w, r)
 	})
 
 	http.HandleFunc("/chatlist", func(w http.ResponseWriter, r *http.Request) {
@@ -60,5 +64,10 @@ func main() {
 	})
 
 	log.Println("Server started on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+
+	err := http.ListenAndServe(":8080", nil)
+
+	if err != nil {
+		panic(err)
+	}
 }

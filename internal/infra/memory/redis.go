@@ -31,11 +31,10 @@ func NewRedisClient() *RedisClient {
 		panic(err)
 	}
 
-	val, err := rdb.Get(ctx, "key").Result()
+	_, err = rdb.Get(ctx, "key").Result()
 	if err != nil {
 		panic(err)
 	}
-	log.Println("key:", val)
 
 	return &RedisClient{
 		Rdb: rdb,

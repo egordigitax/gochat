@@ -1,6 +1,7 @@
-package services
+package hubs
 
 import (
+	"chat-service/internal/application/services"
 	"chat-service/internal/domain"
 	"chat-service/internal/domain/interfaces"
 	"log"
@@ -13,17 +14,22 @@ type ChatsHub struct {
 	broadcast  chan domain.Message
 	register   chan *ChatsClient
 	unregister chan *ChatsClient
-	messages   *MessageService
+	messages   *services.MessageService
+	chats      *services.ChatsService
 	mu         sync.RWMutex
 }
 
-func NewChatsHub(messagesService *MessageService) *ChatsHub {
+func NewChatsHub(
+	messagesService *services.MessageService,
+	chatsService *services.ChatsService,
+) *ChatsHub {
 	return &ChatsHub{
 		clients:    make(map[string]*ChatsClient),
 		broadcast:  make(chan domain.Message, 1),
 		register:   make(chan *ChatsClient),
 		unregister: make(chan *ChatsClient),
 		messages:   messagesService,
+		chats:      chatsService,
 	}
 }
 
@@ -41,7 +47,7 @@ func (h *ChatsHub) Run() {
 					case <-c.Done:
 						return
 					default:
-						chats, err := h.messages.GetChatsList(client.UserID)
+						chats, err := h.chats.GetChatsList(client.UserID)
 						if err != nil {
 							log.Println(err)
 							return
