@@ -1,6 +1,7 @@
-package interfaces
+package repositories
 
-import "chat-service/internal/domain"
+import "chat-service/internal/domain/entities"
+
 
 type ChatsService interface {
 	CheckIfUserHasAccess(
@@ -14,7 +15,7 @@ type ChatsStorage interface {
 		user_uid string,
 		limit int,
 		offset int,
-	) ([]domain.Chat, error)
+	) ([]entities.Chat, error)
 	CheckIfUserHasAccess(
 		user_uid string,
 		chat_uid string,
@@ -26,9 +27,9 @@ type ChatsCache interface {
 		user_uid string,
 		limit int,
 		offset int,
-	) ([]domain.Chat, error)
+	) ([]entities.Chat, error)
 	SetUsersChats(
 		user_uid string,
-		chats []domain.Chat,
+		chats []entities.Chat,
 	) error
 }

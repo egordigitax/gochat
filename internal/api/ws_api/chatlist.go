@@ -3,7 +3,7 @@ package ws_api
 import (
 	"chat-service/internal/api/utils"
 	"chat-service/internal/application/hubs"
-	"chat-service/internal/domain"
+	"chat-service/internal/domain/entities"
 	"log"
 	"net/http"
 )
@@ -30,7 +30,7 @@ func ServeMainWebSocket(hub *hubs.ChatsHub, w http.ResponseWriter, r *http.Reque
 		Hub:    hub,
 		Conn:   conn,
 		UserID: userID,
-		Send:   make(chan []domain.Chat, 10),
+		Send:   make(chan []entities.Chat, 10),
 	}
 
 	client.Done = make(chan struct{}, 1)

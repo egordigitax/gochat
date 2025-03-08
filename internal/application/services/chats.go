@@ -1,18 +1,18 @@
 package services
 
 import (
-	"chat-service/internal/domain"
-	"chat-service/internal/domain/interfaces"
+	"chat-service/internal/domain/entities"
+	"chat-service/internal/domain/repositories"
 )
 
 type ChatsService struct {
-	ChatsStorage interfaces.ChatsStorage
-	ChatsCache   interfaces.ChatsCache
+	ChatsStorage  repositories.ChatsStorage
+	ChatsCache   repositories.ChatsCache
 }
 
 func NewChatsService(
-	chatsStorage interfaces.ChatsStorage,
-	chatsCache interfaces.ChatsCache,
+	chatsStorage repositories.ChatsStorage,
+	chatsCache repositories.ChatsCache,
 ) *ChatsService {
 	return &ChatsService{
 		ChatsStorage: chatsStorage,
@@ -24,7 +24,7 @@ func (m ChatsService) CheckIfUserHasAccess(user_uid string, chat_uid string) (bo
 	return m.ChatsStorage.CheckIfUserHasAccess(user_uid, chat_uid)
 }
 
-func (m *ChatsService) GetChatsList(user_uid string) ([]domain.Chat, error) {
+func (m *ChatsService) GetChatsList(user_uid string) ([]entities.Chat, error) {
 	msgs, err := m.ChatsStorage.GetUsersChats(user_uid, 10, 0)
 	if err != nil {
 		return nil, err

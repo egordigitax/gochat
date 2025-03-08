@@ -1,7 +1,7 @@
 package redis_repos
 
 import (
-	"chat-service/internal/domain"
+	"chat-service/internal/domain/entities"
 	"chat-service/internal/infra/memory"
 )
 
@@ -17,10 +17,10 @@ func NewRedisMessagesCache(
 	}
 }
 
-func (r RedisMessagesCache) GetMessages(chat_uid string, limit int, offset int) ([]domain.Message, error) {
+func (r RedisMessagesCache) GetMessages(chat_uid string, limit int, offset int) ([]entities.Message, error) {
 	panic("unimplemented")
 }
 
-func (r RedisMessagesCache) SaveMessage(msg domain.Message) error {
+func (r RedisMessagesCache) SaveMessage(msg entities.Message) error {
 	panic("unimplemented")
 }

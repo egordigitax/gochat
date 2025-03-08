@@ -1,7 +1,7 @@
 package postgres_repos
 
 import (
-	"chat-service/internal/domain"
+	"chat-service/internal/domain/entities"
 	"chat-service/internal/infra/databases/postgres"
 	"github.com/lib/pq"
 	"log"
@@ -23,8 +23,8 @@ func (m *PGChatsStorage) GetUsersChats(
 	user_uid string,
 	limit,
 	offset int,
-) ([]domain.Chat, error) {
-	var chats []domain.Chat
+) ([]entities.Chat, error) {
+	var chats []entities.Chat
 	query := `
     SELECT 
         uc.id,
@@ -50,7 +50,7 @@ func (m *PGChatsStorage) GetUsersChats(
 	defer rows.Close()
 
 	for rows.Next() {
-		chat := domain.Chat{}
+		chat := entities.Chat{}
 		err := rows.Scan(
 			&chat.Id,
 			&chat.Title,
@@ -75,7 +75,7 @@ func (m *PGChatsStorage) GetUsersChats(
 	return chats, nil
 }
 
-func (m *PGChatsStorage) FetchChatsLastMessages(chats *[]domain.Chat) error {
+func (m *PGChatsStorage) FetchChatsLastMessages(chats *[]entities.Chat) error {
 	if len(*chats) == 0 {
 		return nil
 	}
@@ -103,10 +103,10 @@ func (m *PGChatsStorage) FetchChatsLastMessages(chats *[]domain.Chat) error {
 	}
 	defer rows.Close()
 
-	lastMessages := make(map[string]domain.Message, len(*chats))
+	lastMessages := make(map[string]entities.Message, len(*chats))
 
 	for rows.Next() {
-		var message domain.Message
+		var message entities.Message
 		if err := rows.Scan(
 			&message.ChatUid,
 			&message.Text,

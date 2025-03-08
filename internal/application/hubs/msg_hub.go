@@ -1,8 +1,9 @@
 package hubs
 
 import (
-	"chat-service/internal/domain"
-	"chat-service/internal/domain/interfaces"
+	"chat-service/internal/application/ports"
+	"chat-service/internal/domain/entities"
+	"chat-service/internal/domain/repositories"
 	"log"
 	"sync"
 )
@@ -10,17 +11,17 @@ import (
 type MessagesHub struct {
     //                [ChatUid]   [UserUid]
 	clients         map[string]map[string]*MessagesClient
-	broadcast       chan domain.Message
+	broadcast       chan entities.Message
 	register        chan *MessagesClient
 	unregister      chan *MessagesClient
-	messagesStorage interfaces.MessagesStorage
+	messagesStorage repositories.MessagesStorage
 	mu              sync.RWMutex
 }
 
-func NewMessagesHub(repo interfaces.MessagesStorage) *MessagesHub {
+func NewMessagesHub(repo repositories.MessagesStorage) *MessagesHub {
 	return &MessagesHub{
 		clients:         make(map[string]map[string]*MessagesClient),
-		broadcast:       make(chan domain.Message, 100),
+		broadcast:       make(chan entities.Message, 100),
 		register:        make(chan *MessagesClient),
 		unregister:      make(chan *MessagesClient),
 		messagesStorage: repo,
@@ -73,7 +74,7 @@ func (h *MessagesHub) removeClient(client *MessagesClient) {
 	}
 }
 
-func (h *MessagesHub) sendMessage(message domain.Message) {
+func (h *MessagesHub) sendMessage(message entities.Message) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	for _, client := range h.clients[message.ChatUid] {
@@ -88,10 +89,10 @@ func (h *MessagesHub) sendMessage(message domain.Message) {
 
 type MessagesClient struct {
 	Hub     *MessagesHub
-	Conn    interfaces.ClientTransport
+	Conn    ports.ClientTransport
 	UserUid string
 	ChatUid string
-	Send    chan domain.Message
+	Send    chan entities.Message
 }
 
 func (c *MessagesClient) ReadPump() {
@@ -101,7 +102,7 @@ func (c *MessagesClient) ReadPump() {
 	}()
 
 	for {
-		var msg domain.Message
+		var msg entities.Message
 		err := c.Conn.ReadJSON(&msg)
 
 		if err != nil {

@@ -1,17 +1,15 @@
 package services
 
-import (
-	"chat-service/internal/domain/interfaces"
-)
+import "chat-service/internal/domain/repositories"
 
 type MessageService struct {
-	MessagesStorage interfaces.MessagesStorage
-	MessagesCache   interfaces.MessagesCache
+	MessagesStorage repositories.MessagesStorage
+	MessagesCache   repositories.MessagesCache
 }
 
 func NewMessageService(
-	messagesStorage interfaces.MessagesStorage,
-	messagesCache interfaces.MessagesCache,
+	messagesStorage repositories.MessagesStorage,
+	messagesCache repositories.MessagesCache,
 ) *MessageService {
 	return &MessageService{
 		MessagesStorage: messagesStorage,
@@ -19,4 +17,4 @@ func NewMessageService(
 	}
 }
 
-var _ interfaces.MessageService = MessageService{}
+var _ repositories.MessageService = MessageService{}

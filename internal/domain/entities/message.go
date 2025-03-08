@@ -1,4 +1,4 @@
-package domain
+package entities
 
 type Message struct {
 	Uid       string `json:"uid" db:"uid"`

@@ -1,7 +1,7 @@
 package redis_repos_test
 
 import (
-	"chat-service/internal/domain"
+	"chat-service/internal/domain/entities"
 	"chat-service/internal/infra/memory"
 	"chat-service/internal/infra/memory/redis_repos"
 	"testing"
@@ -14,14 +14,14 @@ func TestRedisChatsCache_SetUsersChats(t *testing.T) {
 		name string 
 		redisClient *memory.RedisClient
 		user_uid string
-		chats    []domain.Chat
+		chats    []entities.Chat
 		wantErr  bool
 	}{
 		{
 			name:        "SetUsersChats",
 			redisClient: redisClient,
 			user_uid:    "test-user",
-			chats: []domain.Chat{
+			chats: []entities.Chat{
 				{
 					Title: "hello",
 				},
@@ -55,7 +55,7 @@ func TestRedisChatsCache_GetUsersChats(t *testing.T) {
 		user_uid string
 		limit    int
 		offset   int
-		want     []domain.Chat
+		want     []entities.Chat
 		wantErr  bool
 	}{
 		{
@@ -64,7 +64,7 @@ func TestRedisChatsCache_GetUsersChats(t *testing.T) {
 			user_uid:    "test-user",
 			limit:       10,
 			offset:      0,
-			want:        []domain.Chat{{Title: "hello"}},
+			want:        []entities.Chat{{Title: "hello"}},
 			wantErr:     false,
 		},
 	}

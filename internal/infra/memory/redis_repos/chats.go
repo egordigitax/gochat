@@ -1,7 +1,7 @@
 package redis_repos
 
 import (
-	"chat-service/internal/domain"
+	entities "chat-service/internal/domain/entities"
 	"chat-service/internal/infra/memory"
 	"context"
 	"encoding/json"
@@ -21,7 +21,7 @@ func NewRedisChatsCache(
 	}
 }
 
-func (r RedisChatsCache) GetUsersChats(user_uid string, limit int, offset int) ([]domain.Chat, error) {
+func (r RedisChatsCache) GetUsersChats(user_uid string, limit int, offset int) ([]entities.Chat, error) {
 	ctx := context.Background()
 
 	chats, err := r.redisClient.Rdb.HGet(ctx, fmt.Sprintf("users_chats:%s", user_uid), "chats").Result()
@@ -29,7 +29,7 @@ func (r RedisChatsCache) GetUsersChats(user_uid string, limit int, offset int) (
 		return nil, err
 	}
 
-	var userChats []domain.Chat
+	var userChats []entities.Chat
 	err = json.Unmarshal([]byte(chats), &userChats)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (r RedisChatsCache) GetUsersChats(user_uid string, limit int, offset int) (
 	return userChats, nil
 }
 
-func (r RedisChatsCache) SetUsersChats(user_uid string, chats []domain.Chat) error {
+func (r RedisChatsCache) SetUsersChats(user_uid string, chats []entities.Chat) error {
 	ctx := context.Background()
 
 	data, err := json.Marshal(chats)

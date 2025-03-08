@@ -1,9 +1,9 @@
 package hubs
 
 import (
+	"chat-service/internal/application/ports"
 	"chat-service/internal/application/services"
-	"chat-service/internal/domain"
-	"chat-service/internal/domain/interfaces"
+	"chat-service/internal/domain/entities"
 	"log"
 	"sync"
 	"time"
@@ -11,7 +11,7 @@ import (
 
 type ChatsHub struct {
 	clients    map[string]*ChatsClient
-	broadcast  chan domain.Message
+	broadcast  chan entities.Message
 	register   chan *ChatsClient
 	unregister chan *ChatsClient
 	messages   *services.MessageService
@@ -25,7 +25,7 @@ func NewChatsHub(
 ) *ChatsHub {
 	return &ChatsHub{
 		clients:    make(map[string]*ChatsClient),
-		broadcast:  make(chan domain.Message, 1),
+		broadcast:  make(chan entities.Message, 1),
 		register:   make(chan *ChatsClient),
 		unregister: make(chan *ChatsClient),
 		messages:   messagesService,
@@ -80,9 +80,9 @@ func (h *ChatsHub) UnregisterClient(client *ChatsClient) {
 
 type ChatsClient struct {
 	Hub    *ChatsHub
-	Conn   interfaces.ClientTransport
+	Conn   ports.ClientTransport // move from repos
 	UserID string
-	Send   chan []domain.Chat
+	Send   chan []entities.Chat
 	Done   chan struct{}
 }
 
@@ -93,7 +93,7 @@ func (c *ChatsClient) ReadPump() {
 	}()
 
 	for {
-		var msg domain.Message
+		var msg entities.Message
 		err := c.Conn.ReadJSON(&msg)
 		if err != nil {
 			log.Println("[ERROR] WebSocket Read:", err)

@@ -1,6 +1,7 @@
-package interfaces
+package repositories
 
-import "chat-service/internal/domain"
+import "chat-service/internal/domain/entities"
+
 
 type MessageService interface {
 
@@ -10,16 +11,16 @@ type MessagesStorage interface {
 	GetMessages(
 		chat_uid string,
 		limit, offset int,
-	) ([]domain.Message, error)
+	) ([]entities.Message, error)
 
-	SaveMessage(msg domain.Message) error
+	SaveMessage(msg entities.Message) error
 }
 
 type MessagesCache interface {
 	GetMessages(
 		chat_uid string,
 		limit, offset int,
-	) ([]domain.Message, error)
+	) ([]entities.Message, error)
 
-	SaveMessage(msg domain.Message) error
+	SaveMessage(msg entities.Message) error
 }

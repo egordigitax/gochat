@@ -1,7 +1,7 @@
 package postgres_repos
 
 import (
-	"chat-service/internal/domain"
+	"chat-service/internal/domain/entities"
 	"chat-service/internal/infra/databases/postgres"
 )
 
@@ -20,8 +20,8 @@ func NewPGMessagesStorage(
 func (m PGMessagesStorage) GetMessages(
 	chat_uid string,
 	limit int, offset int,
-) ([]domain.Message, error) {
-	var messages []domain.Message
+) ([]entities.Message, error) {
+	var messages []entities.Message
 
 	query := `
     SELECT 
@@ -47,7 +47,7 @@ func (m PGMessagesStorage) GetMessages(
 	return messages, nil
 }
 
-func (m PGMessagesStorage) SaveMessage(msg domain.Message) error {
+func (m PGMessagesStorage) SaveMessage(msg entities.Message) error {
 	query := `
     INSERT INTO users_chats_messages (text, user_uid, chat_uid)
     SELECT $1, $2, $3

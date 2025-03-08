@@ -1,4 +1,4 @@
-package interfaces
+package ports
 
 type ClientTransport interface {
 	Close() error

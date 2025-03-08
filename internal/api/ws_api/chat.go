@@ -3,7 +3,7 @@ package ws_api
 import (
 	"chat-service/internal/api/utils"
 	"chat-service/internal/application/hubs"
-	"chat-service/internal/domain"
+	"chat-service/internal/domain/entities"
 	"log"
 	"net/http"
 )
@@ -27,7 +27,7 @@ func ServeWebSocket(hub *hubs.MessagesHub, w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-    upgrader := utils.GetUpgrader()
+	upgrader := utils.GetUpgrader()
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -36,11 +36,11 @@ func ServeWebSocket(hub *hubs.MessagesHub, w http.ResponseWriter, r *http.Reques
 	}
 
 	client := &hubs.MessagesClient{
-		Hub:    hub,
-		Conn:   conn,
+		Hub:     hub,
+		Conn:    conn,
 		UserUid: userID,
 		ChatUid: chatID,
-		Send:   make(chan domain.Message, 10),
+		Send:    make(chan entities.Message, 10),
 	}
 
 	hub.RegisterClient(client)
