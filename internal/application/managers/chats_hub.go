@@ -23,11 +23,11 @@ type ChatsHub struct {
 func NewChatsHub(
 	messagesService *services.MessageService,
 	chatsService *services.ChatsService,
-	updateChan *chan string,
+	updateChan chan string,
 ) *ChatsHub {
 	return &ChatsHub{
 		clients:    make(map[string]*ChatsClient),
-		broadcast:  *updateChan,
+		broadcast:  updateChan,
 		register:   make(chan *ChatsClient),
 		unregister: make(chan *ChatsClient),
 		messages:   messagesService,

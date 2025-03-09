@@ -9,10 +9,12 @@ import (
 	"chat-service/internal/infra/databases/postgres/postgres_repos"
 	"chat-service/internal/infra/memory"
 	"chat-service/internal/infra/memory/redis_repos"
+	"chat-service/internal/infra/memory/redis_subs"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -50,8 +52,32 @@ func main() {
 
 	updateChan := make(chan string, 100)
 
-	messagesHub := managers.NewMessagesHub(MessagesStorage, &updateChan)
-	chatsHub := managers.NewChatsHub(messagesService, chatsService, &updateChan)
+	broker := redis_subs.NewRedisMessageBroker()
+	go func() {
+		ch, err := broker.Subscribe("test-chat")
+		if err != nil {
+			log.Println(err.Error())
+		}
+
+		for {
+			select {
+			case msg := <-ch:
+				log.Println(msg)
+			}
+		}
+	}()
+
+    time.Sleep(1 * time.Second)
+
+    broker.Publish("test-chat", "hello!")
+    broker.Publish("test-chat", "hello!")
+    broker.Publish("test-chat", "hello!")
+    broker.Publish("test-chat", "im gay!")
+    broker.Publish("test-chat", "hello!")
+    broker.Publish("test-chat", "hello!")
+
+	messagesHub := managers.NewMessagesHub(MessagesStorage, updateChan)
+	chatsHub := managers.NewChatsHub(messagesService, chatsService, updateChan)
 
 	go chatsHub.Run()
 	go messagesHub.Run()

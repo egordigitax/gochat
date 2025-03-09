@@ -52,6 +52,7 @@ func (m *ChatsService) GetChatsByUserUid(
 }
 
 func (m *ChatsService) GetAllUsersFromChatByUid(chat_uid string) ([]string, error) {
+    // get from 
 	return m.ChatsStorage.GetAllUsersFromChatByUid(chat_uid)
 }
 

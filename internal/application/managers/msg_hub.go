@@ -14,12 +14,12 @@ type MessagesHub struct {
 	broadcast       chan entities.Message
 	register        chan *MessagesClient
 	unregister      chan *MessagesClient
-	updateChan      *chan string
+	updateChan      chan string
 	messagesStorage repositories.MessagesStorage
 	mu              sync.RWMutex
 }
 
-func NewMessagesHub(repo repositories.MessagesStorage, updateChan *chan string) *MessagesHub {
+func NewMessagesHub(repo repositories.MessagesStorage, updateChan chan string) *MessagesHub {
 	return &MessagesHub{
 		clients:         make(map[string]map[string]*MessagesClient),
 		broadcast:       make(chan entities.Message, 100),
@@ -82,7 +82,7 @@ func (h *MessagesHub) sendMessage(message entities.Message) {
 	for _, client := range h.clients[message.ChatUid] {
 		select {
 		case client.Send <- message:
-			*h.updateChan <- message.ChatUid
+			h.updateChan <- message.ChatUid
 		default:
 			close(client.Send)
 			delete(h.clients[message.ChatUid], client.UserUid)
