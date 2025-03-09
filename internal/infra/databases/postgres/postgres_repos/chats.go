@@ -134,8 +134,6 @@ func (m *PGChatsStorage) FetchChatsLastMessages(chats *[]entities.Chat) error {
 		messages[message.ChatUid] = message
 	}
 
-	log.Println(messages)
-
 	for i := range *chats {
 		if msg, exists := messages[(*chats)[i].Uid]; exists {
 			(*chats)[i].LastMessage = msg

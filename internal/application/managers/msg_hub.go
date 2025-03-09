@@ -3,6 +3,7 @@ package managers
 import (
 	"chat-service/internal/application/ports"
 	"chat-service/internal/domain/entities"
+	"chat-service/internal/domain/events"
 	"chat-service/internal/domain/repositories"
 	"log"
 	"sync"
@@ -10,6 +11,7 @@ import (
 
 type MessagesHub struct {
 	//                [ChatUid]   [UserUid]
+	broker          events.MessageBrokerAdaptor
 	clients         map[string]map[string]*MessagesClient
 	broadcast       chan entities.Message
 	register        chan *MessagesClient
@@ -19,8 +21,13 @@ type MessagesHub struct {
 	mu              sync.RWMutex
 }
 
-func NewMessagesHub(repo repositories.MessagesStorage, updateChan chan string) *MessagesHub {
+func NewMessagesHub(
+	repo repositories.MessagesStorage,
+	updateChan chan string,
+	broker events.MessageBrokerAdaptor,
+) *MessagesHub {
 	return &MessagesHub{
+		broker:          broker,
 		clients:         make(map[string]map[string]*MessagesClient),
 		broadcast:       make(chan entities.Message, 100),
 		register:        make(chan *MessagesClient),
@@ -77,6 +84,12 @@ func (h *MessagesHub) removeClient(client *MessagesClient) {
 }
 
 func (h *MessagesHub) sendMessage(message entities.Message) {
+
+	err := h.broker.Publish(message.ChatUid, message.ToJSON())
+	if err != nil {
+		log.Println(err.Error())
+	}
+
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	for _, client := range h.clients[message.ChatUid] {

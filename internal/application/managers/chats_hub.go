@@ -56,14 +56,10 @@ func (h *ChatsHub) Run() {
 
 		case chatUid := <-h.broadcast:
 
-			log.Println("got a new message! updating chat for members: ", chatUid)
-
 			userUids, err := h.chats.GetAllUsersFromChatByUid(chatUid)
 			if err != nil {
 				log.Println("error: ", err)
 			}
-
-			log.Println("got users: ", userUids)
 
 			for _, uid := range userUids {
 				chats, err := h.chats.GetChatsByUserUid(
@@ -74,7 +70,6 @@ func (h *ChatsHub) Run() {
 					log.Println(err)
 					return
 				}
-				log.Println("get chats for user :", uid, " chats: ", chats)
 
 				if client, ok := h.clients[uid]; ok {
 					client.Send <- chats.Items

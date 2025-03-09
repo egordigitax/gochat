@@ -54,7 +54,7 @@ func main() {
 
 	broker := redis_subs.NewRedisMessageBroker()
 	go func() {
-		ch, err := broker.Subscribe("test-chat")
+		ch, err := broker.Subscribe("b5c6c767-cb9f-43a5-b8b5-7fe4ff083447")
 		if err != nil {
 			log.Println(err.Error())
 		}
@@ -62,21 +62,21 @@ func main() {
 		for {
 			select {
 			case msg := <-ch:
-				log.Println(msg)
+                log.Println("got from sub: ", msg)
 			}
 		}
 	}()
 
-    time.Sleep(1 * time.Second)
+	time.Sleep(5 * time.Millisecond)
 
-    broker.Publish("test-chat", "hello!")
-    broker.Publish("test-chat", "hello!")
-    broker.Publish("test-chat", "hello!")
-    broker.Publish("test-chat", "im gay!")
-    broker.Publish("test-chat", "hello!")
-    broker.Publish("test-chat", "hello!")
+	broker.Publish("test-chat", "hello!")
+	broker.Publish("test-chat", "hello!")
+	broker.Publish("test-chat", "hello!")
+	broker.Publish("test-chat", "im gay!")
+	broker.Publish("test-chat", "hello!")
+	broker.Publish("test-chat", "hello!")
 
-	messagesHub := managers.NewMessagesHub(MessagesStorage, updateChan)
+	messagesHub := managers.NewMessagesHub(MessagesStorage, updateChan, broker)
 	chatsHub := managers.NewChatsHub(messagesService, chatsService, updateChan)
 
 	go chatsHub.Run()
