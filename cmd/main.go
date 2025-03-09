@@ -48,9 +48,10 @@ func main() {
 		ChatsCache,
 	)
 
-	messagesHub := managers.NewMessagesHub(MessagesStorage)
+	updateChan := make(chan string, 100)
 
-	chatsHub := managers.NewChatsHub(messagesService, chatsService)
+	messagesHub := managers.NewMessagesHub(MessagesStorage, &updateChan)
+	chatsHub := managers.NewChatsHub(messagesService, chatsService, &updateChan)
 
 	go chatsHub.Run()
 	go messagesHub.Run()

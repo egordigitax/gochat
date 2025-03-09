@@ -8,12 +8,11 @@ import (
 	"chat-service/internal/schema/resources"
 	"log"
 	"sync"
-	"time"
 )
 
 type ChatsHub struct {
 	clients    map[string]*ChatsClient
-	broadcast  chan entities.Message
+	broadcast  chan string
 	register   chan *ChatsClient
 	unregister chan *ChatsClient
 	messages   *services.MessageService
@@ -24,10 +23,11 @@ type ChatsHub struct {
 func NewChatsHub(
 	messagesService *services.MessageService,
 	chatsService *services.ChatsService,
+	updateChan *chan string,
 ) *ChatsHub {
 	return &ChatsHub{
 		clients:    make(map[string]*ChatsClient),
-		broadcast:  make(chan entities.Message, 1),
+		broadcast:  *updateChan,
 		register:   make(chan *ChatsClient),
 		unregister: make(chan *ChatsClient),
 		messages:   messagesService,
@@ -43,26 +43,43 @@ func (h *ChatsHub) Run() {
 			h.clients[client.UserID] = client
 			h.mu.Unlock()
 
-			go func(c *ChatsClient) {
-				for {
-					select {
-					case <-c.Done:
-						return
-					default:
-						chats, err := h.chats.GetChatsByUserUid(
-							dto.GetUserChatsByUidPayload{
-								UserUid: client.UserID,
-							})
-						if err != nil {
-							log.Println(err)
-							return
-						}
-						h.clients[client.UserID].Send <- chats.Items
-						time.Sleep(1 * time.Second)
+			chats, err := h.chats.GetChatsByUserUid(
+				dto.GetUserChatsByUidPayload{
+					UserUid: client.UserID,
+				})
+			if err != nil {
+				log.Println(err)
+				return
+			}
 
-					}
+			h.clients[client.UserID].Send <- chats.Items
+
+		case chatUid := <-h.broadcast:
+
+			log.Println("got a new message! updating chat for members: ", chatUid)
+
+			userUids, err := h.chats.GetAllUsersFromChatByUid(chatUid)
+			if err != nil {
+				log.Println("error: ", err)
+			}
+
+			log.Println("got users: ", userUids)
+
+			for _, uid := range userUids {
+				chats, err := h.chats.GetChatsByUserUid(
+					dto.GetUserChatsByUidPayload{
+						UserUid: uid,
+					})
+				if err != nil {
+					log.Println(err)
+					return
 				}
-			}(client)
+				log.Println("get chats for user :", uid, " chats: ", chats)
+
+				if client, ok := h.clients[uid]; ok {
+					client.Send <- chats.Items
+				}
+			}
 
 		case client := <-h.unregister:
 			h.mu.Lock()
@@ -81,6 +98,10 @@ func (h *ChatsHub) RegisterClient(client *ChatsClient) {
 func (h *ChatsHub) UnregisterClient(client *ChatsClient) {
 	client.Done <- struct{}{}
 	h.unregister <- client
+}
+
+func (h *ChatsHub) UpdateChatForUsers(chat_uid string) {
+	h.broadcast <- chat_uid
 }
 
 type ChatsClient struct {
@@ -104,11 +125,7 @@ func (c *ChatsClient) ReadPump() {
 			log.Println("[ERROR] WebSocket Read:", err)
 			break
 		}
-
-		c.Hub.broadcast <- msg
 	}
-
-	log.Println("[DEBUG] Main ReadPump started for user:", c.UserID)
 }
 
 func (c *ChatsClient) WritePump() {

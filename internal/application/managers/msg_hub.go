@@ -9,22 +9,24 @@ import (
 )
 
 type MessagesHub struct {
-    //                [ChatUid]   [UserUid]
+	//                [ChatUid]   [UserUid]
 	clients         map[string]map[string]*MessagesClient
 	broadcast       chan entities.Message
 	register        chan *MessagesClient
 	unregister      chan *MessagesClient
+	updateChan      *chan string
 	messagesStorage repositories.MessagesStorage
 	mu              sync.RWMutex
 }
 
-func NewMessagesHub(repo repositories.MessagesStorage) *MessagesHub {
+func NewMessagesHub(repo repositories.MessagesStorage, updateChan *chan string) *MessagesHub {
 	return &MessagesHub{
 		clients:         make(map[string]map[string]*MessagesClient),
 		broadcast:       make(chan entities.Message, 100),
 		register:        make(chan *MessagesClient),
 		unregister:      make(chan *MessagesClient),
 		messagesStorage: repo,
+		updateChan:      updateChan,
 	}
 }
 
@@ -42,13 +44,13 @@ func (h *MessagesHub) Run() {
 		case message := <-h.broadcast:
 			log.Printf("[INFO] Broadcasting message in chat=%s: %s", message.ChatUid, message.Text)
 			h.sendMessage(message)
-            go h.messagesStorage.SaveMessage(message)
+			go h.messagesStorage.SaveMessage(message)
 		}
 	}
 }
 
 func (h *MessagesHub) RegisterClient(client *MessagesClient) {
-    //TODO: Check if client has access to this chat
+	//TODO: Check if client has access to this chat
 	h.register <- client
 }
 
@@ -80,6 +82,7 @@ func (h *MessagesHub) sendMessage(message entities.Message) {
 	for _, client := range h.clients[message.ChatUid] {
 		select {
 		case client.Send <- message:
+			*h.updateChan <- message.ChatUid
 		default:
 			close(client.Send)
 			delete(h.clients[message.ChatUid], client.UserUid)

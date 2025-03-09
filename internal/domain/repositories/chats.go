@@ -24,6 +24,9 @@ type ChatsStorage interface {
 	FetchChatsLastMessages(
 		chats *[]entities.Chat,
 	) error
+	GetAllUsersFromChatByUid(
+		chat_uid string,
+	) ([]string, error)
 }
 
 type ChatsCache interface {

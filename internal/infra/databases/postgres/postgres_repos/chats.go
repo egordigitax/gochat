@@ -19,6 +19,24 @@ func NewPGChatsStorage(postgresClient *postgres.PostgresClient) *PGChatsStorage 
 	}
 }
 
+func (m *PGChatsStorage) GetAllUsersFromChatByUid(chat_uid string) ([]string, error) {
+	var userUids []string
+
+	query := `
+    SELECT
+        users_uids
+    FROM users_chats
+    WHERE uid = $1
+    `
+
+	err := m.postgresClient.C_RO.QueryRow(query, chat_uid).Scan(pq.Array(&userUids))
+	if err != nil {
+		return nil, err
+	}
+
+	return userUids, nil
+}
+
 func (m *PGChatsStorage) GetChatByUid(chat_uid string) (entities.Chat, error) {
 	var chat entities.Chat
 	query := `
