@@ -1,5 +1,7 @@
 package entities
 
+import "chat-service/internal/domain/base"
+
 type ChatType int
 
 func (c ChatType) String() string {
@@ -7,14 +9,18 @@ func (c ChatType) String() string {
 }
 
 type Chat struct {
-	Id          int      `json:"id" db:"id"`
-	Uid         string   `json:"uid" db:"uid"`
-	Title       string   `json:"title" db:"title"`
-	MediaURL    string   `json:"media_url" db:"media_url"`
-	UsersUids   []string `json:"users_uids" db:"users_uids"`
-	UpdatedAt   string   `json:"updated_at" db:"updated_at"`
-	ChatType    ChatType `json:"chat_type" db:"chat_type"`
-	LastMessage Message  `json:"last_message" db:"last_message"`
+	base.AggregateRoot
+	Id          int      `db:"id"`
+	Uid         string   `db:"uid"`
+	Title       string   `db:"title"`
+	MediaURL    string   `db:"media_url"`
+	UpdatedAt   string   `db:"updated_at"`
+	ChatType    ChatType `db:"chat_type"`
+	LastMessage Message  `db:"message"`
 }
 
-type ChatUid string
+type ChatRole int
+
+func (c ChatRole) String() string {
+	return [...]string{"Personal", "Group"}[c]
+}

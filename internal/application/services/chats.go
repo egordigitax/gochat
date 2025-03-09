@@ -1,12 +1,13 @@
 package services
 
 import (
-	"chat-service/internal/domain/entities"
 	"chat-service/internal/domain/repositories"
+	"chat-service/internal/schema/dto"
+	"chat-service/internal/schema/resources"
 )
 
 type ChatsService struct {
-	ChatsStorage  repositories.ChatsStorage
+	ChatsStorage repositories.ChatsStorage
 	ChatsCache   repositories.ChatsCache
 }
 
@@ -24,13 +25,30 @@ func (m ChatsService) CheckIfUserHasAccess(user_uid string, chat_uid string) (bo
 	return m.ChatsStorage.CheckIfUserHasAccess(user_uid, chat_uid)
 }
 
-func (m *ChatsService) GetChatsList(user_uid string) ([]entities.Chat, error) {
-	msgs, err := m.ChatsStorage.GetUsersChats(user_uid, 10, 0)
+func (m *ChatsService) GetChatsByUserUid(
+	payload dto.GetUserChatsByUidPayload,
+) (dto.GetUserChatsByUidResponse, error) {
+
+	response := dto.GetUserChatsByUidResponse{}
+
+	chats, err := m.ChatsStorage.GetChatsByUserUid(payload.UserUid, 10, 0)
 	if err != nil {
-		return nil, err
+		return response, err
 	}
 
-	return msgs, nil
+	err = m.ChatsStorage.FetchChatsLastMessages(&chats)
+	if err != nil {
+		return response, err
+	}
+
+	response.Items = make([]resources.Chat, len(chats))
+
+	for i, item := range chats {
+		response.Items[i] = resources.Chat{}
+		response.Items[i].FromEnitity(&item)
+	}
+
+	return response, nil
 }
 
 func (m *ChatsService) CreateNewChat(

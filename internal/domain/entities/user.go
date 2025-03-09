@@ -6,5 +6,4 @@ type User struct {
 	MediaUrl string `json:"media_url" db:"media_url"`
 }
 
-type UserUid string
 

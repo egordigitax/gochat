@@ -1,9 +1,11 @@
-package hubs
+package managers
 
 import (
 	"chat-service/internal/application/ports"
 	"chat-service/internal/application/services"
 	"chat-service/internal/domain/entities"
+	"chat-service/internal/schema/dto"
+	"chat-service/internal/schema/resources"
 	"log"
 	"sync"
 	"time"
@@ -47,12 +49,15 @@ func (h *ChatsHub) Run() {
 					case <-c.Done:
 						return
 					default:
-						chats, err := h.chats.GetChatsList(client.UserID)
+						chats, err := h.chats.GetChatsByUserUid(
+							dto.GetUserChatsByUidPayload{
+								UserUid: client.UserID,
+							})
 						if err != nil {
 							log.Println(err)
 							return
 						}
-						h.clients[client.UserID].Send <- chats
+						h.clients[client.UserID].Send <- chats.Items
 						time.Sleep(1 * time.Second)
 
 					}
@@ -82,7 +87,7 @@ type ChatsClient struct {
 	Hub    *ChatsHub
 	Conn   ports.ClientTransport // move from repos
 	UserID string
-	Send   chan []entities.Chat
+	Send   chan []resources.Chat
 	Done   chan struct{}
 }
 

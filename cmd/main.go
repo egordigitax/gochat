@@ -3,7 +3,7 @@ package main
 import (
 	"chat-service/internal/api/utils"
 	"chat-service/internal/api/ws_api"
-	"chat-service/internal/application/hubs"
+	"chat-service/internal/application/managers"
 	"chat-service/internal/application/services"
 	"chat-service/internal/infra/databases/postgres"
 	"chat-service/internal/infra/databases/postgres/postgres_repos"
@@ -48,9 +48,9 @@ func main() {
 		ChatsCache,
 	)
 
-	messagesHub := hubs.NewMessagesHub(MessagesStorage)
+	messagesHub := managers.NewMessagesHub(MessagesStorage)
 
-	chatsHub := hubs.NewChatsHub(messagesService, chatsService)
+	chatsHub := managers.NewChatsHub(messagesService, chatsService)
 
 	go chatsHub.Run()
 	go messagesHub.Run()

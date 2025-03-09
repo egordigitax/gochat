@@ -3,28 +3,24 @@ package postgres_repos
 import (
 	"chat-service/internal/domain/entities"
 	"chat-service/internal/infra/databases/postgres"
-	"github.com/lib/pq"
+	"errors"
 	"log"
+
+	"github.com/lib/pq"
 )
 
 type PGChatsStorage struct {
 	postgresClient *postgres.PostgresClient
 }
 
-func NewPGChatsStorage(
-	postgresClient *postgres.PostgresClient,
-) *PGChatsStorage {
+func NewPGChatsStorage(postgresClient *postgres.PostgresClient) *PGChatsStorage {
 	return &PGChatsStorage{
 		postgresClient: postgresClient,
 	}
 }
 
-func (m *PGChatsStorage) GetUsersChats(
-	user_uid string,
-	limit,
-	offset int,
-) ([]entities.Chat, error) {
-	var chats []entities.Chat
+func (m *PGChatsStorage) GetChatByUid(chat_uid string) (entities.Chat, error) {
+	var chat entities.Chat
 	query := `
     SELECT 
         uc.id,
@@ -35,54 +31,53 @@ func (m *PGChatsStorage) GetUsersChats(
         uc.uid,
         uc.chat_type
     FROM users_chats uc
-    JOIN users u 
-        ON u.uid = ANY(uc.users_uids)
+    WHERE uc.uid = $1;
+    `
+
+	err := m.postgresClient.C_RO.Get(&chat, query, chat_uid)
+	if err != nil {
+		log.Println(err)
+		return chat, err
+	}
+
+	return chat, nil
+}
+
+func (m *PGChatsStorage) GetChatsByUserUid(userUID string, limit, offset int) ([]entities.Chat, error) {
+	var chats []entities.Chat
+
+	query := `
+    SELECT 
+        uc.id,
+        uc.title,
+        COALESCE(uc.media_url, '') AS media_url,
+        uc.updated_at,
+        uc.uid,
+        uc.chat_type
+    FROM users_chats uc
+    JOIN users u ON u.uid = ANY(uc.users_uids)
     WHERE u.uid = $1
     LIMIT $2 OFFSET $3;
     `
 
-	rows, err := m.postgresClient.C_RO.Query(query, user_uid, limit, offset)
+	err := m.postgresClient.C_RO.Select(&chats, query, userUID, limit, offset)
 	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		chat := entities.Chat{}
-		err := rows.Scan(
-			&chat.Id,
-			&chat.Title,
-			&chat.MediaURL,
-			pq.Array(&chat.UsersUids),
-			&chat.UpdatedAt,
-			&chat.Uid,
-			&chat.ChatType,
-		)
-		chats = append(chats, chat)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	err = m.FetchChatsLastMessages(&chats)
-	if err != nil {
+		log.Printf("Error fetching chats for user %s: %v\n", userUID, err)
 		return nil, err
 	}
 
 	return chats, nil
 }
 
+// FetchChatsLastMessages retrieves the last messages for given chats.
 func (m *PGChatsStorage) FetchChatsLastMessages(chats *[]entities.Chat) error {
 	if len(*chats) == 0 {
-		return nil
+		return errors.New("chats list is empty")
 	}
 
-	chatIDs := make([]string, len(*chats))
+	chatUIDs := make([]string, len(*chats))
 	for i, chat := range *chats {
-		chatIDs[i] = chat.Uid
+		chatUIDs[i] = chat.Uid
 	}
 
 	query := `
@@ -90,20 +85,22 @@ func (m *PGChatsStorage) FetchChatsLastMessages(chats *[]entities.Chat) error {
         ucm.chat_uid, 
         ucm.text,
         ucm.created_at,
-        u.nickname
+        u.nickname,
+        u.uid
     FROM users_chats_messages ucm
     JOIN users u ON ucm.user_uid = u.uid
     WHERE ucm.chat_uid = ANY($1)
     ORDER BY ucm.chat_uid, ucm.created_at DESC;
     `
 
-	rows, err := m.postgresClient.C_RO.Query(query, pq.Array(chatIDs))
+	rows, err := m.postgresClient.C_RO.Query(query, pq.Array(chatUIDs))
 	if err != nil {
+		log.Printf("Error fetching last messages: %v\n", err)
 		return err
 	}
 	defer rows.Close()
 
-	lastMessages := make(map[string]entities.Message, len(*chats))
+	messages := make(map[string]entities.Message, len(*chats))
 
 	for rows.Next() {
 		var message entities.Message
@@ -112,14 +109,17 @@ func (m *PGChatsStorage) FetchChatsLastMessages(chats *[]entities.Chat) error {
 			&message.Text,
 			&message.CreatedAt,
 			&message.UserInfo.Nickname,
+			&message.UserInfo.Uid,
 		); err != nil {
 			return err
 		}
-		lastMessages[message.ChatUid] = message
+		messages[message.ChatUid] = message
 	}
 
+	log.Println(messages)
+
 	for i := range *chats {
-		if msg, exists := lastMessages[(*chats)[i].Uid]; exists {
+		if msg, exists := messages[(*chats)[i].Uid]; exists {
 			(*chats)[i].LastMessage = msg
 		}
 	}

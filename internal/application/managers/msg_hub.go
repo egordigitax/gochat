@@ -1,4 +1,4 @@
-package hubs
+package managers
 
 import (
 	"chat-service/internal/application/ports"

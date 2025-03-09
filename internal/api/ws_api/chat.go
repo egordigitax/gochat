@@ -2,7 +2,7 @@ package ws_api
 
 import (
 	"chat-service/internal/api/utils"
-	"chat-service/internal/application/hubs"
+	"chat-service/internal/application/managers"
 	"chat-service/internal/domain/entities"
 	"log"
 	"net/http"
@@ -11,7 +11,7 @@ import (
 //TODO: Use worker pool instead goroutines directly
 //TODO: Move it to Controller struct
 
-func ServeWebSocket(hub *hubs.MessagesHub, w http.ResponseWriter, r *http.Request) {
+func ServeWebSocket(hub *managers.MessagesHub, w http.ResponseWriter, r *http.Request) {
 	userID, err := utils.GetUserIDFromHeader(
 		r.Header.Get("Authorization"),
 	)
@@ -35,7 +35,7 @@ func ServeWebSocket(hub *hubs.MessagesHub, w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	client := &hubs.MessagesClient{
+	client := &managers.MessagesClient{
 		Hub:     hub,
 		Conn:    conn,
 		UserUid: userID,
