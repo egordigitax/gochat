@@ -1,6 +1,12 @@
 package events
 
-type MessageBrokerAdaptor interface {
-	Subscribe(topics ...string) (chan string, error)
-	Publish(topic, message string) error
+import "chat-service/internal/domain/entities"
+
+type BrokerMessagesAdaptor interface {
+	GetMessagesFromChats(
+		chats_uids ...string,
+	) (chan entities.Message, error)
+	SendMessageToChat(
+		msg entities.Message,
+	) error
 }

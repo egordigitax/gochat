@@ -1,7 +1,5 @@
 package entities
 
-import "chat-service/internal/domain/base"
-
 type ChatType int
 
 func (c ChatType) String() string {
@@ -9,7 +7,6 @@ func (c ChatType) String() string {
 }
 
 type Chat struct {
-	base.AggregateRoot
 	Id          int      `db:"id"`
 	Uid         string   `db:"uid"`
 	Title       string   `db:"title"`

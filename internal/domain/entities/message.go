@@ -15,3 +15,9 @@ func (m *Message) ToJSON() string {
 	b, _ := json.Marshal(m)
 	return string(b)
 }
+
+func NewMessageFromJson(jsonMsg string) (Message, error) {
+	var msg Message
+	err := json.Unmarshal([]byte(jsonMsg), &msg)
+	return msg, err
+}

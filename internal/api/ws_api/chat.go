@@ -3,7 +3,6 @@ package ws_api
 import (
 	"chat-service/internal/api/utils"
 	"chat-service/internal/application/managers"
-	"chat-service/internal/domain/entities"
 	"log"
 	"net/http"
 )
@@ -40,11 +39,8 @@ func ServeWebSocket(hub *managers.MessagesHub, w http.ResponseWriter, r *http.Re
 		Conn:    conn,
 		UserUid: userID,
 		ChatUid: chatID,
-		Send:    make(chan entities.Message, 10),
 	}
 
 	hub.RegisterClient(client)
-
-	go client.ReadPump()
-	go client.WritePump()
+    log.Println("user ", userID, " connected.")
 }

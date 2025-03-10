@@ -10,97 +10,42 @@ import (
 )
 
 type MessagesHub struct {
-	//                [ChatUid]   [UserUid]
-	broker          events.MessageBrokerAdaptor
-	clients         map[string]map[string]*MessagesClient
-	broadcast       chan entities.Message
-	register        chan *MessagesClient
-	unregister      chan *MessagesClient
-	updateChan      chan string
-	messagesStorage repositories.MessagesStorage
-	mu              sync.RWMutex
+	broker     events.BrokerMessagesAdaptor
+	clients    map[string]map[string]*MessagesClient
+	register   chan *MessagesClient
+	unregister chan *MessagesClient
+	mu         sync.RWMutex
 }
 
 func NewMessagesHub(
 	repo repositories.MessagesStorage,
-	updateChan chan string,
-	broker events.MessageBrokerAdaptor,
+	broker events.BrokerMessagesAdaptor,
 ) *MessagesHub {
 	return &MessagesHub{
-		broker:          broker,
-		clients:         make(map[string]map[string]*MessagesClient),
-		broadcast:       make(chan entities.Message, 100),
-		register:        make(chan *MessagesClient),
-		unregister:      make(chan *MessagesClient),
-		messagesStorage: repo,
-		updateChan:      updateChan,
-	}
-}
-
-func (h *MessagesHub) Run() {
-	for {
-		select {
-		case client := <-h.register:
-			h.addClient(client)
-			log.Printf("[INFO] New client joined: user=%s, chat=%s", client.UserUid, client.ChatUid)
-
-		case client := <-h.unregister:
-			h.removeClient(client)
-			log.Printf("[INFO] Client left: user=%s, chat=%s", client.UserUid, client.ChatUid)
-
-		case message := <-h.broadcast:
-			log.Printf("[INFO] Broadcasting message in chat=%s: %s", message.ChatUid, message.Text)
-			h.sendMessage(message)
-			go h.messagesStorage.SaveMessage(message)
-		}
+		broker:     broker,
+		clients:    make(map[string]map[string]*MessagesClient),
+		register:   make(chan *MessagesClient),
+		unregister: make(chan *MessagesClient),
 	}
 }
 
 func (h *MessagesHub) RegisterClient(client *MessagesClient) {
 	//TODO: Check if client has access to this chat
-	h.register <- client
+	msgChan, err := h.broker.GetMessagesFromChats(client.ChatUid)
+	if err != nil {
+		log.Println(err)
+	}
+
+	client.Send = msgChan
+
+	// h.register <- client
+
+    go client.WritePump()
+    go client.ReadPump()
 }
 
 func (h *MessagesHub) UnregisterClient(client *MessagesClient) {
-	h.unregister <- client
-}
-
-func (h *MessagesHub) addClient(client *MessagesClient) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	if h.clients[client.ChatUid] == nil {
-		h.clients[client.ChatUid] = make(map[string]*MessagesClient)
-	}
-	h.clients[client.ChatUid][client.UserUid] = client
-}
-
-func (h *MessagesHub) removeClient(client *MessagesClient) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	if _, ok := h.clients[client.ChatUid][client.UserUid]; ok {
-		delete(h.clients[client.ChatUid], client.UserUid)
-		close(client.Send)
-	}
-}
-
-func (h *MessagesHub) sendMessage(message entities.Message) {
-
-	err := h.broker.Publish(message.ChatUid, message.ToJSON())
-	if err != nil {
-		log.Println(err.Error())
-	}
-
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-	for _, client := range h.clients[message.ChatUid] {
-		select {
-		case client.Send <- message:
-			h.updateChan <- message.ChatUid
-		default:
-			close(client.Send)
-			delete(h.clients[message.ChatUid], client.UserUid)
-		}
-	}
+	// h.unregister <- client
 }
 
 type MessagesClient struct {
@@ -126,12 +71,13 @@ func (c *MessagesClient) ReadPump() {
 			break
 		}
 
-		log.Printf("[INFO] Received message from %s in chat %s: %s", c.UserUid, c.ChatUid, msg.Text)
-
 		msg.UserUid = c.UserUid
 		msg.ChatUid = c.ChatUid
 
-		c.Hub.broadcast <- msg
+		err = c.Hub.broker.SendMessageToChat(msg)
+		if err != nil {
+			log.Println(err.Error())
+		}
 	}
 }
 

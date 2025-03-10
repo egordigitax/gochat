@@ -1,17 +1,18 @@
-package redis_subs
+package broker
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"github.com/redis/go-redis/v9"
 )
 
-type RedisMessageBroker struct {
+type RedisBroker struct {
 	redisClient *redis.Client
 }
 
-func NewRedisMessageBroker() *RedisMessageBroker {
+func NewRedisBroker() *RedisBroker {
 
 	ctx := context.Background()
 	rdb := redis.NewClient(&redis.Options{
@@ -37,12 +38,12 @@ func NewRedisMessageBroker() *RedisMessageBroker {
 		panic(err)
 	}
 
-	return &RedisMessageBroker{
+	return &RedisBroker{
 		redisClient: rdb,
 	}
 }
 
-func (r RedisMessageBroker) Publish(topic string, message string) error {
+func (r RedisBroker) Publish(topic string, message string) error {
 	ctx := context.Background()
 	err := r.redisClient.Publish(ctx, topic, message).Err()
 	if err != nil {
@@ -52,18 +53,20 @@ func (r RedisMessageBroker) Publish(topic string, message string) error {
 	return nil
 }
 
-func (r RedisMessageBroker) Subscribe(topics ...string) (chan string, error) {
+func (r RedisBroker) Subscribe(topics ...string) (chan string, error) {
 	ctx := context.Background()
 	sub := r.redisClient.Subscribe(ctx, topics...)
 
-	if _, err := sub.Receive(ctx); err != nil {
-		return nil, err
+	if sub == nil {
+		return nil, errors.New("failed to subscribe")
 	}
 
-	msgCh := make(chan string)
+	msgCh := make(chan string, 100)
 
 	go func() {
 		defer close(msgCh)
+		defer sub.Close()
+
 		for msg := range sub.Channel() {
 			msgCh <- msg.Payload
 		}
