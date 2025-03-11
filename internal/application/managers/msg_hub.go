@@ -5,6 +5,7 @@ import (
 	"chat-service/internal/domain/entities"
 	"chat-service/internal/domain/events"
 	"chat-service/internal/domain/repositories"
+	"context"
 	"log"
 	"sync"
 )
@@ -15,37 +16,81 @@ type MessagesHub struct {
 	register   chan *MessagesClient
 	unregister chan *MessagesClient
 	mu         sync.RWMutex
+	countUsers int
+	msgCount   int
 }
 
 func NewMessagesHub(
 	repo repositories.MessagesStorage,
 	broker events.BrokerMessagesAdaptor,
 ) *MessagesHub {
-	return &MessagesHub{
+
+	hub := &MessagesHub{
 		broker:     broker,
 		clients:    make(map[string]map[string]*MessagesClient),
 		register:   make(chan *MessagesClient),
 		unregister: make(chan *MessagesClient),
 	}
+
+	go hub.PumpChats()
+
+	return hub
 }
 
-func (h *MessagesHub) RegisterClient(client *MessagesClient) {
-	//TODO: Check if client has access to this chat
-	msgChan, err := h.broker.GetMessagesFromChats(client.ChatUid)
+func (h *MessagesHub) PumpChats() {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	msgChan, err := h.broker.GetMessagesFromChats(ctx, "chats")
 	if err != nil {
 		log.Println(err)
 	}
 
-	client.Send = msgChan
+	defer func() {
+		cancel()
+	}()
 
+	for {
+		msg := <-msgChan
+		h.msgCount++
+		log.Println("totalMessages: ", h.msgCount)
+		for _, user := range h.clients[msg.ChatUid] {
+			select {
+			case user.Send <- msg:
+			default:
+				h.UnregisterClient(user)
+			}
+		}
+	}
+}
+
+func (h *MessagesHub) RegisterClient(client *MessagesClient) {
+	//TODO: Check if client has access to this chat
 	// h.register <- client
 
-    go client.WritePump()
-    go client.ReadPump()
+	h.countUsers++
+	log.Println(h.countUsers)
+
+	client.Send = make(chan entities.Message, 1000)
+
+	go client.WritePump()
+	go client.ReadPump()
+
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if h.clients[client.ChatUid] == nil {
+		h.clients[client.ChatUid] = make(map[string]*MessagesClient)
+	}
+	h.clients[client.ChatUid][client.UserUid] = client
 }
 
 func (h *MessagesHub) UnregisterClient(client *MessagesClient) {
-	// h.unregister <- client
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if _, ok := h.clients[client.ChatUid][client.UserUid]; ok {
+		delete(h.clients[client.ChatUid], client.UserUid)
+		close(client.Send)
+	}
 }
 
 type MessagesClient struct {
@@ -57,15 +102,17 @@ type MessagesClient struct {
 }
 
 func (c *MessagesClient) ReadPump() {
+	ctx, cancel := context.WithCancel(context.Background())
+
 	defer func() {
 		c.Hub.unregister <- c
 		c.Conn.Close()
+		cancel()
 	}()
 
 	for {
 		var msg entities.Message
 		err := c.Conn.ReadJSON(&msg)
-
 		if err != nil {
 			log.Println("[ERROR] WebSocket Read:", err)
 			break
@@ -74,7 +121,7 @@ func (c *MessagesClient) ReadPump() {
 		msg.UserUid = c.UserUid
 		msg.ChatUid = c.ChatUid
 
-		err = c.Hub.broker.SendMessageToChat(msg)
+		err = c.Hub.broker.SendMessageToChat(ctx, "chats", msg)
 		if err != nil {
 			log.Println(err.Error())
 		}

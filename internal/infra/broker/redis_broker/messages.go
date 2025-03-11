@@ -3,6 +3,7 @@ package redis_broker
 import (
 	"chat-service/internal/domain/entities"
 	"chat-service/internal/domain/events"
+	"context"
 )
 
 type RedisMessagesBroker struct {
@@ -18,10 +19,11 @@ func NewRedisMessagesBroker(
 }
 
 func (r *RedisMessagesBroker) GetMessagesFromChats(
+	ctx context.Context,
 	chats_uids ...string,
 ) (chan entities.Message, error) {
 
-	ch, err := r.redisClient.Subscribe(chats_uids...)
+	ch, err := r.redisClient.Subscribe(ctx, chats_uids...)
 	if err != nil {
 		return nil, err
 	}
@@ -32,9 +34,13 @@ func (r *RedisMessagesBroker) GetMessagesFromChats(
 		defer close(msgChan)
 
 		for {
-			redisMsg := <-ch
-			message, _ := entities.NewMessageFromJson(redisMsg)
-			msgChan <- message
+			select {
+			case redisMsg := <-ch:
+				message, _ := entities.NewMessageFromJson(redisMsg)
+				msgChan <- message
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
 
@@ -42,7 +48,9 @@ func (r *RedisMessagesBroker) GetMessagesFromChats(
 }
 
 func (r *RedisMessagesBroker) SendMessageToChat(
+	ctx context.Context,
+	topic string,
 	msg entities.Message,
 ) error {
-	return r.redisClient.Publish(msg.ChatUid, msg.ToJSON())
+	return r.redisClient.Publish(ctx, topic, msg.ToJSON())
 }

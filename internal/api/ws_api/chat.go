@@ -42,5 +42,5 @@ func ServeWebSocket(hub *managers.MessagesHub, w http.ResponseWriter, r *http.Re
 	}
 
 	hub.RegisterClient(client)
-    log.Println("user ", userID, " connected.")
+    // log.Println("user ", userID, " connected.")
 }

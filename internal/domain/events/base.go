@@ -1,6 +1,10 @@
 package events
 
+import (
+	"context"
+)
+
 type BrokerBaseAdaptor interface {
-	Subscribe(topics ...string) (chan string, error)
-	Publish(topic, message string) error
+	Subscribe(ctx context.Context, topics ...string) (chan string, error)
+	Publish(ctx context.Context, topic, message string) error
 }
