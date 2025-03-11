@@ -3,6 +3,7 @@ package resources
 import "chat-service/internal/domain/entities"
 
 type Chat struct {
+	Uid         string  `json:"uid"`
 	Title       string  `json:"title"`
 	MediaUrl    string  `json:"media_url"`
 	UnreadCount int     `json:"unread_count"`
@@ -12,6 +13,7 @@ type Chat struct {
 }
 
 func (c *Chat) FromEnitity(entity *entities.Chat) {
+	c.Uid = entity.Uid
 	c.Title = entity.Title
 	c.UpdatedAt = entity.UpdatedAt
 	c.LastMessage = Message{

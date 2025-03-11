@@ -48,12 +48,12 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 		return
 	}
 
-	client := &managers.MessagesClient{
-		Hub:     m.hub,
-		Conn:    conn,
-		UserUid: userID,
-		ChatUid: chatID,
-	}
+	client := managers.NewMessagesClient(
+		m.hub,
+		conn,
+		userID,
+		chatID,
+	)
 
 	m.hub.RegisterClient(client)
 
@@ -64,18 +64,12 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 func (m *MessagesWSController) StartClientWrite(
 	client *managers.MessagesClient,
 ) {
-	ctx, cancel := context.WithCancel(context.Background())
-
 	defer func() {
 		client.Hub.UnregisterClient(client) // move somewhere
-		cancel()
 	}()
 
 	for msg := range client.Send {
-
-		response := client.GetMessageFromChat(ctx, msg)
-
-		if err := client.Conn.WriteJSON(response); err != nil {
+		if err := client.Conn.WriteJSON(msg); err != nil {
 			break
 		}
 	}
@@ -92,7 +86,7 @@ func (m *MessagesWSController) StartClientRead(
 	}()
 
 	for {
-		var msg dto.SendMessageToChatPayload
+		var msg dto.GetMessageFromClientPayload
 		err := client.Conn.ReadJSON(&msg)
 		if err != nil {
 			log.Println("[ERROR] WebSocket Read:", err)
@@ -108,6 +102,6 @@ func (m *MessagesWSController) StartClientRead(
 			continue
 		}
 
-		client.SendMessageToChat(ctx, msg)
+		client.GetMessageFromClient(ctx, msg)
 	}
 }

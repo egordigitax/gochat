@@ -3,7 +3,7 @@ package ws_api
 import (
 	"chat-service/internal/api/utils"
 	"chat-service/internal/application/managers"
-	"chat-service/internal/schema/resources"
+	"chat-service/internal/schema/dto"
 	"log"
 	"net/http"
 )
@@ -11,7 +11,19 @@ import (
 //TODO: Use worker pool instead goroutines directly
 //TODO: Move it to Controller struct
 
-func ServeChatsWebSocket(hub *managers.ChatsHub, w http.ResponseWriter, r *http.Request) {
+type ChatsWSController struct {
+	hub *managers.ChatsHub
+}
+
+func NewChatsWSController(
+	hub *managers.ChatsHub,
+) *ChatsWSController {
+	return &ChatsWSController{
+		hub: hub,
+	}
+}
+
+func (c *ChatsWSController) ServeChatsWebSocket(w http.ResponseWriter, r *http.Request) {
 	userID, err := utils.GetUserIDFromHeader(r.Header.Get("Authorization"))
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -27,16 +39,33 @@ func ServeChatsWebSocket(hub *managers.ChatsHub, w http.ResponseWriter, r *http.
 	}
 
 	client := &managers.ChatsClient{
-		Hub:    hub,
+		Hub:    c.hub,
 		Conn:   conn,
 		UserID: userID,
-		Send:   make(chan []resources.Chat, 10),
+		Send:   make(chan dto.GetUserChatsByUidResponse, 10),
 	}
 
-	hub.RegisterClient(client)
+	c.hub.RegisterClient(client)
 
-	go client.ReadPump()
-	go client.WritePump()
-
-	log.Printf("[INFO] Main WS connected: user=%s", userID)
+	// go c.StartClientRead(client)
+	go c.StartClientWrite(client)
 }
+
+func (c *ChatsWSController) StartClientWrite(client *managers.ChatsClient) {
+	defer func() {
+		c.hub.UnregisterClient(client)
+	}()
+
+	for msg := range client.Send {
+		if err := client.Conn.WriteJSON(msg); err != nil {
+			break
+		}
+	}
+}
+//
+// func (c *ChatsWSController) StartClientRead(client *managers.ChatsClient) {
+// 	defer func() {
+// 		c.hub.UnregisterClient(client)
+// 	}()
+//
+// }

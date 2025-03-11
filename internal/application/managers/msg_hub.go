@@ -19,8 +19,6 @@ const (
 type MessagesHub struct {
 	broker     events.BrokerMessagesAdaptor
 	clients    map[string]map[string]*MessagesClient
-	register   chan *MessagesClient
-	unregister chan *MessagesClient
 	mu         sync.RWMutex
 	countUsers int // debug
 	msgCount   int // debug
@@ -34,8 +32,6 @@ func NewMessagesHub(
 	hub := &MessagesHub{
 		broker:     broker,
 		clients:    make(map[string]map[string]*MessagesClient),
-		register:   make(chan *MessagesClient),
-		unregister: make(chan *MessagesClient),
 	}
 
 	go hub.PumpChats()
@@ -57,27 +53,17 @@ func (h *MessagesHub) PumpChats() {
 
 	for {
 		msg := <-msgChan
-		h.msgCount++
-		log.Println("totalMessages: ", h.msgCount)
 		for _, user := range h.clients[msg.ChatUid] {
-			select {
-			case user.Send <- msg:
-			default:
-				h.UnregisterClient(user)
-			}
+			user.SendMessageToClient(ctx, msg)
+			h.msgCount++
 		}
 	}
 }
 
 func (h *MessagesHub) RegisterClient(client *MessagesClient) {
+
 	//TODO: Check if client has access to this chat
-	// h.register <- client
-
 	h.countUsers++
-	log.Println(h.countUsers)
-
-	client.Send = make(chan entities.Message, 1000)
-
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -102,13 +88,30 @@ type MessagesClient struct {
 	Conn    ports.ClientTransport
 	UserUid string
 	ChatUid string
-	Send    chan entities.Message
+	Send    chan dto.SendMessageToClientPayload
 }
 
-func (c *MessagesClient) SendMessageToChat(
+func NewMessagesClient(
+	hub *MessagesHub,
+	Conn ports.ClientTransport,
+	UserUid string, ChatUid string,
+) *MessagesClient {
+	sendChan := make(chan dto.SendMessageToClientPayload, 1000)
+	return &MessagesClient{
+		Hub:     hub,
+		Conn:    Conn,
+		UserUid: UserUid,
+		ChatUid: ChatUid,
+		Send:    sendChan,
+	}
+}
+
+func (c *MessagesClient) GetMessageFromClient(
 	ctx context.Context,
-	msg dto.SendMessageToChatPayload,
+	msg dto.GetMessageFromClientPayload,
 ) {
+	// Get Message From Client Logic
+
 	message := msg.ToEntity()
 
 	err := c.Hub.broker.SendMessageToChat(ctx, CHATS_CHANNEL, message)
@@ -126,9 +129,14 @@ func (c *MessagesClient) SendMessageToChat(
 	}
 }
 
-func (c *MessagesClient) GetMessageFromChat(
+func (c *MessagesClient) SendMessageToClient(
 	ctx context.Context,
 	msg entities.Message,
-) dto.GetMessageFromChatPayload {
-	return dto.BuildGetMessageFromChatPayloadFromEntity(msg)
+) error {
+
+	// Send Message To Client Logic
+
+	c.Send <- dto.BuildSendMessageToClientPayloadFromEntity(msg)
+
+	return nil
 }

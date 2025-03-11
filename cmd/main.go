@@ -50,15 +50,14 @@ func main() {
 		ChatsCache,
 	)
 
-	updateChan := make(chan string, 100) // remove
-
 	broker := broker.NewRedisBroker()
 	messagesBroker := redis_broker.NewRedisMessagesBroker(broker)
 
 	messagesHub := managers.NewMessagesHub(MessagesStorage, messagesBroker)
-	chatsHub := managers.NewChatsHub(messagesService, chatsService, updateChan)
+	chatsHub := managers.NewChatsHub(messagesService, chatsService, messagesBroker)
 
 	MessagesController := ws_api.NewMessagesWSController(messagesHub)
+	ChatsController := ws_api.NewChatsWSController(chatsHub)
 
 	go chatsHub.Run()
 
@@ -67,7 +66,7 @@ func main() {
 	})
 
 	http.HandleFunc("/chats", func(w http.ResponseWriter, r *http.Request) {
-		ws_api.ServeChatsWebSocket(chatsHub, w, r)
+		ChatsController.ServeChatsWebSocket(w, r)
 	})
 
 	log.Println("Server started on :8080")

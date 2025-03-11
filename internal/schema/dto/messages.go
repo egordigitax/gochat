@@ -8,19 +8,19 @@ import (
 	"github.com/google/uuid"
 )
 
-type SendMessageToChatPayload struct {
+type GetMessageFromClientPayload struct {
 	MsgType string            `json:"msg_type"`
 	Msg     resources.Message `json:"msg"`
 }
 
-func (m *SendMessageToChatPayload) Validate() error {
+func (m *GetMessageFromClientPayload) Validate() error {
 	if m.Msg.ChatUid == "" {
 		return errors.New("ChatUid cannot be empty")
 	}
 	return nil
 }
 
-func (m *SendMessageToChatPayload) ToEntity() entities.Message {
+func (m *GetMessageFromClientPayload) ToEntity() entities.Message {
 	return entities.Message{
 		Uid:     uuid.New().String(),
 		ChatUid: m.Msg.ChatUid,
@@ -33,10 +33,10 @@ func (m *SendMessageToChatPayload) ToEntity() entities.Message {
 	}
 }
 
-func BuildGetMessageFromChatPayloadFromEntity(
+func BuildSendMessageToClientPayloadFromEntity(
 	m entities.Message,
-) GetMessageFromChatPayload {
-	return GetMessageFromChatPayload{
+) SendMessageToClientPayload {
+	return SendMessageToClientPayload{
 		MsgType: m.MessageType,
 		Msg: resources.Message{
 			Username:  m.UserInfo.Nickname,
@@ -48,7 +48,7 @@ func BuildGetMessageFromChatPayloadFromEntity(
 	}
 }
 
-type GetMessageFromChatPayload struct {
+type SendMessageToClientPayload struct {
 	MsgType string            `json:"msg_type"`
 	Msg     resources.Message `json:"msg"`
 }

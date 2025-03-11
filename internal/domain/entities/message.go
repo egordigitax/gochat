@@ -2,7 +2,6 @@ package entities
 
 import (
 	"encoding/json"
-	"errors"
 )
 
 type Message struct {
@@ -24,20 +23,4 @@ func NewMessageFromJson(jsonMsg string) (Message, error) {
 	var msg Message
 	err := json.Unmarshal([]byte(jsonMsg), &msg)
 	return msg, err
-}
-
-func (m *Message) Validate() error {
-    if m.ChatUid == "" {
-        return errors.New("ChatUid not found")
-    }
-    
-    if m.UserUid == "" {
-        return errors.New("UserUid not found")
-    }
-    
-    if m.Text == "" {
-        return errors.New("Text not found")
-    }
-
-    return nil
 }
