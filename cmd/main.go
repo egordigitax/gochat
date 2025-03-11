@@ -33,10 +33,11 @@ func main() {
 	}
 
 	redisClient := memory.NewRedisClient()
+	postgresClient := postgres.NewPostgresClient()
+
 	MessagesCache := redis_repos.NewRedisMessagesCache(redisClient)
 	ChatsCache := redis_repos.NewRedisChatsCache(redisClient)
 
-	postgresClient := postgres.NewPostgresClient()
 	MessagesStorage := postgres_repos.NewPGMessagesStorage(postgresClient)
 	ChatsStorage := postgres_repos.NewPGChatsStorage(postgresClient)
 
@@ -44,7 +45,6 @@ func main() {
 		MessagesStorage,
 		MessagesCache,
 	)
-
 	chatsService := services.NewChatsService(
 		ChatsStorage,
 		ChatsCache,
@@ -58,14 +58,16 @@ func main() {
 	messagesHub := managers.NewMessagesHub(MessagesStorage, messagesBroker)
 	chatsHub := managers.NewChatsHub(messagesService, chatsService, updateChan)
 
+	MessagesController := ws_api.NewMessagesWSController(messagesHub)
+
 	go chatsHub.Run()
 
-	http.HandleFunc("/chat", func(w http.ResponseWriter, r *http.Request) {
-		ws_api.ServeWebSocket(messagesHub, w, r)
+	http.HandleFunc("/messages", func(w http.ResponseWriter, r *http.Request) {
+		MessagesController.ServeMessagesWebSocket(w, r)
 	})
 
-	http.HandleFunc("/chatlist", func(w http.ResponseWriter, r *http.Request) {
-		ws_api.ServeMainWebSocket(chatsHub, w, r)
+	http.HandleFunc("/chats", func(w http.ResponseWriter, r *http.Request) {
+		ws_api.ServeChatsWebSocket(chatsHub, w, r)
 	})
 
 	log.Println("Server started on :8080")

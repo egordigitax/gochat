@@ -5,9 +5,15 @@ import (
 	"chat-service/internal/domain/entities"
 	"chat-service/internal/domain/events"
 	"chat-service/internal/domain/repositories"
+	"chat-service/internal/schema/dto"
 	"context"
 	"log"
 	"sync"
+)
+
+const (
+	CHATS_CHANNEL                 = "chats"
+	SAVE_MESSAGES_HISTORY_CHANNEL = "to-save"
 )
 
 type MessagesHub struct {
@@ -16,8 +22,8 @@ type MessagesHub struct {
 	register   chan *MessagesClient
 	unregister chan *MessagesClient
 	mu         sync.RWMutex
-	countUsers int
-	msgCount   int
+	countUsers int // debug
+	msgCount   int // debug
 }
 
 func NewMessagesHub(
@@ -40,7 +46,7 @@ func NewMessagesHub(
 func (h *MessagesHub) PumpChats() {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	msgChan, err := h.broker.GetMessagesFromChats(ctx, "chats")
+	msgChan, err := h.broker.GetMessagesFromChats(ctx, CHATS_CHANNEL)
 	if err != nil {
 		log.Println(err)
 	}
@@ -72,9 +78,6 @@ func (h *MessagesHub) RegisterClient(client *MessagesClient) {
 
 	client.Send = make(chan entities.Message, 1000)
 
-	go client.WritePump()
-	go client.ReadPump()
-
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -89,6 +92,7 @@ func (h *MessagesHub) UnregisterClient(client *MessagesClient) {
 	defer h.mu.Unlock()
 	if _, ok := h.clients[client.ChatUid][client.UserUid]; ok {
 		delete(h.clients[client.ChatUid], client.UserUid)
+		client.Conn.Close()
 		close(client.Send)
 	}
 }
@@ -101,37 +105,30 @@ type MessagesClient struct {
 	Send    chan entities.Message
 }
 
-func (c *MessagesClient) ReadPump() {
-	ctx, cancel := context.WithCancel(context.Background())
+func (c *MessagesClient) SendMessageToChat(
+	ctx context.Context,
+	msg dto.SendMessageToChatPayload,
+) {
+	message := msg.ToEntity()
 
-	defer func() {
-		c.Hub.unregister <- c
-		c.Conn.Close()
-		cancel()
-	}()
+	err := c.Hub.broker.SendMessageToChat(ctx, CHATS_CHANNEL, message)
+	if err != nil {
+		log.Println(err.Error())
+	}
 
-	for {
-		var msg entities.Message
-		err := c.Conn.ReadJSON(&msg)
-		if err != nil {
-			log.Println("[ERROR] WebSocket Read:", err)
-			break
-		}
-
-		msg.UserUid = c.UserUid
-		msg.ChatUid = c.ChatUid
-
-		err = c.Hub.broker.SendMessageToChat(ctx, "chats", msg)
-		if err != nil {
-			log.Println(err.Error())
-		}
+	err = c.Hub.broker.SendMessageToChat(
+		ctx,
+		SAVE_MESSAGES_HISTORY_CHANNEL,
+		message,
+	)
+	if err != nil {
+		log.Println(err.Error())
 	}
 }
 
-func (c *MessagesClient) WritePump() {
-	for msg := range c.Send {
-		if err := c.Conn.WriteJSON(msg); err != nil {
-			break
-		}
-	}
+func (c *MessagesClient) GetMessageFromChat(
+	ctx context.Context,
+	msg entities.Message,
+) dto.GetMessageFromChatPayload {
+	return dto.BuildGetMessageFromChatPayloadFromEntity(msg)
 }
