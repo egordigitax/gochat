@@ -1,6 +1,7 @@
 package managers
 
 import (
+	"chat-service/internal/application/constants"
 	"chat-service/internal/application/ports"
 	"chat-service/internal/application/services"
 	"chat-service/internal/domain/events"
@@ -8,15 +9,16 @@ import (
 	"context"
 	"log"
 	"sync"
+	"time"
 )
 
 type ChatsHub struct {
-	broker       events.BrokerMessagesAdaptor
-	clients      map[string]*ChatsClient
-	clientsChats map[string][]string
-	messages     *services.MessageService
-	chats        *services.ChatsService
-	mu           sync.RWMutex
+	broker          events.BrokerMessagesAdaptor
+	clients         map[string]*ChatsClient
+	isChatHasClient map[string]map[string]bool
+	messages        *services.MessageService
+	chats           *services.ChatsService
+	mu              sync.RWMutex
 }
 
 func NewChatsHub(
@@ -33,30 +35,40 @@ func NewChatsHub(
 }
 
 func (h *ChatsHub) Run() {
-
 	ctx, cancel := context.WithCancel(context.Background())
 
-	msgChan, err := h.broker.GetMessagesFromChats(ctx, "chats")
+	defer cancel()
+
+	msgChan, err := h.broker.GetMessagesFromChannel(ctx, constants.SAVED_MESSAGES_CHANNEL)
 	if err != nil {
-		log.Println("Cant subscribe to chats: ", err.Error())
+		log.Println("Cant subscribe to chats:", err)
+		return
 	}
 
-	defer func() {
-		cancel()
-		close(msgChan)
-	}()
+	ticker := time.NewTicker(1 * time.Second)
+	chats := make(map[string]struct{})
 
 	for {
+
 		select {
 		case msg := <-msgChan:
-			if client, ok := h.clients[msg.ChatUid]; ok {
-				client.UpdateChats()
+			chats[msg.ChatUid] = struct{}{}
+
+		case <-ticker.C:
+			for chat := range chats {
+				userUids, err := h.chats.GetAllUsersFromChatByUid(chat)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				for _, user := range userUids {
+					if client, ok := h.clients[user]; ok {
+						client.UpdateChats()
+					}
+				}
 			}
-		default:
-			break
 		}
 	}
-
 }
 
 func (h *ChatsHub) RegisterClient(client *ChatsClient) {
@@ -71,14 +83,6 @@ func (h *ChatsHub) RegisterClient(client *ChatsClient) {
 	if err != nil {
 		log.Println(err)
 		return
-	}
-
-	// TODO: map by chatUid instead of useruid
-
-	h.clientsChats[client.UserID] = make([]string, len(chats.Items))
-
-	for i, item := range chats.Items {
-		h.clientsChats[client.UserID][i] = item.Uid
 	}
 
 	h.clients[client.UserID].Send <- chats

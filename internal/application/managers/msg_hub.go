@@ -1,6 +1,7 @@
 package managers
 
 import (
+	"chat-service/internal/application/constants"
 	"chat-service/internal/application/ports"
 	"chat-service/internal/domain/entities"
 	"chat-service/internal/domain/events"
@@ -11,17 +12,12 @@ import (
 	"sync"
 )
 
-const (
-	CHATS_CHANNEL                 = "chats"
-	SAVE_MESSAGES_HISTORY_CHANNEL = "to-save"
-)
-
 type MessagesHub struct {
 	broker     events.BrokerMessagesAdaptor
 	clients    map[string]map[string]*MessagesClient
 	mu         sync.RWMutex
-	countUsers int // debug
-	msgCount   int // debug
+	countUsers int
+	msgCount   int
 }
 
 func NewMessagesHub(
@@ -30,8 +26,8 @@ func NewMessagesHub(
 ) *MessagesHub {
 
 	hub := &MessagesHub{
-		broker:     broker,
-		clients:    make(map[string]map[string]*MessagesClient),
+		broker:  broker,
+		clients: make(map[string]map[string]*MessagesClient),
 	}
 
 	go hub.PumpChats()
@@ -42,7 +38,7 @@ func NewMessagesHub(
 func (h *MessagesHub) PumpChats() {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	msgChan, err := h.broker.GetMessagesFromChats(ctx, CHATS_CHANNEL)
+	msgChan, err := h.broker.GetMessagesFromChannel(ctx, constants.CHATS_CHANNEL)
 	if err != nil {
 		log.Println(err)
 	}
@@ -53,16 +49,22 @@ func (h *MessagesHub) PumpChats() {
 
 	for {
 		msg := <-msgChan
-		for _, user := range h.clients[msg.ChatUid] {
+
+		h.mu.RLock()
+		clients := h.clients[msg.ChatUid]
+
+		for _, user := range clients {
 			user.SendMessageToClient(ctx, msg)
-			h.msgCount++
 		}
+
+		h.mu.RUnlock()
 	}
 }
 
 func (h *MessagesHub) RegisterClient(client *MessagesClient) {
 
 	//TODO: Check if client has access to this chat
+
 	h.countUsers++
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -70,6 +72,7 @@ func (h *MessagesHub) RegisterClient(client *MessagesClient) {
 	if h.clients[client.ChatUid] == nil {
 		h.clients[client.ChatUid] = make(map[string]*MessagesClient)
 	}
+
 	h.clients[client.ChatUid][client.UserUid] = client
 }
 
@@ -96,7 +99,9 @@ func NewMessagesClient(
 	Conn ports.ClientTransport,
 	UserUid string, ChatUid string,
 ) *MessagesClient {
+
 	sendChan := make(chan dto.SendMessageToClientPayload, 1000)
+
 	return &MessagesClient{
 		Hub:     hub,
 		Conn:    Conn,
@@ -112,18 +117,17 @@ func (c *MessagesClient) GetMessageFromClient(
 ) {
 	// Get Message From Client Logic
 
+	c.Hub.msgCount++
+	log.Println("sent to users: ", c.Hub.msgCount)
+
 	message := msg.ToEntity()
 
-	err := c.Hub.broker.SendMessageToChat(ctx, CHATS_CHANNEL, message)
-	if err != nil {
-		log.Println(err.Error())
-	}
-
-	err = c.Hub.broker.SendMessageToChat(
+	err := c.Hub.broker.SendMessageToChannel(
 		ctx,
-		SAVE_MESSAGES_HISTORY_CHANNEL,
+		constants.CHATS_CHANNEL,
 		message,
 	)
+
 	if err != nil {
 		log.Println(err.Error())
 	}

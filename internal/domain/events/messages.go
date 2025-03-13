@@ -6,11 +6,11 @@ import (
 )
 
 type BrokerMessagesAdaptor interface {
-	GetMessagesFromChats(
+	GetMessagesFromChannel(
 		ctx context.Context,
 		chats_uids ...string,
 	) (chan entities.Message, error)
-	SendMessageToChat(
+	SendMessageToChannel(
 		ctx context.Context,
 		topic string,
 		msg entities.Message,

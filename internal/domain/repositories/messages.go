@@ -14,6 +14,7 @@ type MessagesStorage interface {
 	) ([]entities.Message, error)
 
 	SaveMessage(msg entities.Message) error
+    SaveMessagesBulk(msg ...entities.Message) error 
 }
 
 type MessagesCache interface {

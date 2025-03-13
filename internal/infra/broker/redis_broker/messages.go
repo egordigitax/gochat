@@ -18,7 +18,7 @@ func NewRedisMessagesBroker(
 	}
 }
 
-func (r *RedisMessagesBroker) GetMessagesFromChats(
+func (r *RedisMessagesBroker) GetMessagesFromChannel(
 	ctx context.Context,
 	chats_uids ...string,
 ) (chan entities.Message, error) {
@@ -28,7 +28,7 @@ func (r *RedisMessagesBroker) GetMessagesFromChats(
 		return nil, err
 	}
 
-	msgChan := make(chan entities.Message, 100)
+	msgChan := make(chan entities.Message, 1000)
 
 	go func() {
 		defer close(msgChan)
@@ -47,7 +47,7 @@ func (r *RedisMessagesBroker) GetMessagesFromChats(
 	return msgChan, nil
 }
 
-func (r *RedisMessagesBroker) SendMessageToChat(
+func (r *RedisMessagesBroker) SendMessageToChannel(
 	ctx context.Context,
 	topic string,
 	msg entities.Message,

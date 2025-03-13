@@ -64,8 +64,9 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 func (m *MessagesWSController) StartClientWrite(
 	client *managers.MessagesClient,
 ) {
+
 	defer func() {
-		client.Hub.UnregisterClient(client) // move somewhere
+		client.Hub.UnregisterClient(client)
 	}()
 
 	for msg := range client.Send {
@@ -78,11 +79,11 @@ func (m *MessagesWSController) StartClientWrite(
 func (m *MessagesWSController) StartClientRead(
 	client *managers.MessagesClient,
 ) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, _ := context.WithCancel(context.Background())
 
 	defer func() {
 		client.Hub.UnregisterClient(client)
-		cancel()
+		// cancel()
 	}()
 
 	for {
