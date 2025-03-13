@@ -18,3 +18,5 @@ func NewMessageService(
 }
 
 var _ repositories.MessageService = MessageService{}
+
+// implement here get chat history from redis cache + db cache

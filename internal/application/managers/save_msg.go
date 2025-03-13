@@ -53,6 +53,8 @@ func (s *SaveMessagesHub) StartSavingPump() error {
 
 			toSaveArr = append(toSaveArr, msg)
 
+			// implement here cache messages to redis, before save
+
 		case <-ticker.C:
 
 			if len(toSaveArr) == 0 {
@@ -77,6 +79,9 @@ func (s *SaveMessagesHub) StartSavingPump() error {
 
 			s.savedCount += len(toSaveArr)
 			log.Println("saved to db: ", s.savedCount)
+
+			// implement here remove cached messages from redis before resetting
+
 			toSaveArr = nil
 		}
 	}

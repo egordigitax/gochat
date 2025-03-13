@@ -74,6 +74,9 @@ func (h *MessagesHub) RegisterClient(client *MessagesClient) {
 	}
 
 	h.clients[client.ChatUid][client.UserUid] = client
+
+	// implement here return chat history to user on connect
+
 }
 
 func (h *MessagesHub) UnregisterClient(client *MessagesClient) {
