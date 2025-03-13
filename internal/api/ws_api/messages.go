@@ -79,6 +79,9 @@ func (m *MessagesWSController) StartClientWrite(
 func (m *MessagesWSController) StartClientRead(
 	client *managers.MessagesClient,
 ) {
+    
+    // TODO: test cancel, and add it to defer if it works fine
+
 	ctx, _ := context.WithCancel(context.Background())
 
 	defer func() {
