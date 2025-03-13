@@ -21,7 +21,7 @@ func NewChatsService(
 	}
 }
 
-func (m ChatsService) CheckIfUserHasAccess(user_uid string, chat_uid string) (bool, error) {
+func (m *ChatsService) CheckIfUserHasAccess(user_uid string, chat_uid string) (bool, error) {
 	return m.ChatsStorage.CheckIfUserHasAccess(user_uid, chat_uid)
 }
 
