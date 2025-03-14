@@ -53,16 +53,16 @@ func main() {
 	broker := broker.NewRedisBroker()
 	messagesBroker := redis_broker.NewRedisMessagesBroker(broker)
 
-	messagesHub := managers.NewMessagesHub(MessagesStorage, messagesBroker)
+	messagesHub := managers.NewMessagesHub(messagesService, messagesBroker)
 	chatsHub := managers.NewChatsHub(messagesService, chatsService, messagesBroker)
 	savingHub := managers.NewSaveMessagesHub(messagesBroker, messagesService, MessagesCache)
-
-	go savingHub.StartSavingPump()
 
 	MessagesController := ws_api.NewMessagesWSController(messagesHub)
 	ChatsController := ws_api.NewChatsWSController(chatsHub)
 
-	go chatsHub.Run()
+	go chatsHub.StartPumpChats()
+    go messagesHub.StartPumpMessages()
+	go savingHub.StartSavingPump()
 
 	http.HandleFunc("/messages", func(w http.ResponseWriter, r *http.Request) {
 		MessagesController.ServeMessagesWebSocket(w, r)

@@ -3,39 +3,40 @@ package managers
 import (
 	"chat-service/internal/application/constants"
 	"chat-service/internal/application/ports"
+	"chat-service/internal/application/services"
 	"chat-service/internal/domain/entities"
 	"chat-service/internal/domain/events"
-	"chat-service/internal/domain/repositories"
 	"chat-service/internal/schema/dto"
 	"context"
 	"log"
 	"sync"
+
 )
 
 type MessagesHub struct {
 	broker     events.BrokerMessagesAdaptor
 	clients    map[string]map[string]*MessagesClient
+	messages   *services.MessageService
 	mu         sync.RWMutex
 	countUsers int
 	msgCount   int
 }
 
 func NewMessagesHub(
-	repo repositories.MessagesStorage,
+	messages *services.MessageService,
 	broker events.BrokerMessagesAdaptor,
 ) *MessagesHub {
 
 	hub := &MessagesHub{
-		broker:  broker,
-		clients: make(map[string]map[string]*MessagesClient),
+		broker:   broker,
+		messages: messages,
+		clients:  make(map[string]map[string]*MessagesClient),
 	}
-
-	go hub.PumpChats()
 
 	return hub
 }
 
-func (h *MessagesHub) PumpChats() {
+func (h *MessagesHub) StartPumpMessages() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	msgChan, err := h.broker.GetMessagesFromChannel(ctx, constants.CHATS_CHANNEL)
@@ -75,8 +76,14 @@ func (h *MessagesHub) RegisterClient(client *MessagesClient) {
 
 	h.clients[client.ChatUid][client.UserUid] = client
 
-	// implement here return chat history to user on connect
+	history, err := h.messages.GetMessagesHistory(client.ChatUid, 10, 0)
+	if err != nil {
+        log.Println("smth wrong:", err)
+	}
 
+	for _, msg := range history {
+		client.Send <- dto.BuildSendMessageToClientPayloadFromEntity(msg)
+	}
 }
 
 func (h *MessagesHub) UnregisterClient(client *MessagesClient) {

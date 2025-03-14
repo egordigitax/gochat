@@ -20,7 +20,6 @@ type MessagesStorage interface {
 type MessagesCache interface {
 	GetMessages(
 		chat_uid string,
-		limit, offset int,
 	) ([]entities.Message, error)
 
     DeleteMessage(msg entities.Message) error

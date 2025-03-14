@@ -39,7 +39,7 @@ func (s *SaveMessagesHub) StartSavingPump() error {
 		return err
 	}
 
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 
 	defer func() {
 		ticker.Stop()

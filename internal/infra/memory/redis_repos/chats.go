@@ -5,7 +5,6 @@ import (
 	"chat-service/internal/infra/memory"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 )
 
@@ -35,9 +34,9 @@ func (r RedisChatsCache) GetUsersChats(user_uid string, limit int, offset int) (
 		return nil, err
 	}
 
-	if len(userChats) == 0 {
-		return nil, errors.New("nocache")
-	}
+	// if len(userChats) == 0 {
+	// 	return nil, errors.New("nocache")
+	// }
 
 	return userChats, nil
 }

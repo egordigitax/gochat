@@ -34,7 +34,7 @@ func NewChatsHub(
 	}
 }
 
-func (h *ChatsHub) Run() {
+func (h *ChatsHub) StartPumpChats() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	defer cancel()

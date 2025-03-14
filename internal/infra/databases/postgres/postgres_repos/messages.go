@@ -55,9 +55,11 @@ func (m PGMessagesStorage) GetMessages(
         user_uid, 
         chat_uid,
         created_at,
-        uid,
+        uid
     FROM users_chats_messages 
-    WHERE chat_uid = $1 LIMIT $2;
+    WHERE chat_uid = $1 
+    ORDER BY created_at DESC
+    LIMIT $2 OFFSET $3;
     `
 
 	err := m.postgresClient.C_RO.Select(
@@ -65,6 +67,7 @@ func (m PGMessagesStorage) GetMessages(
 		query,
 		chat_uid,
 		limit,
+        offset,
 	)
 	if err != nil {
 		return nil, err

@@ -20,7 +20,7 @@ func NewRedisMessagesCache(
 	}
 }
 
-func (r RedisMessagesCache) GetMessages(chat_uid string, limit int, offset int) ([]entities.Message, error) {
+func (r RedisMessagesCache) GetMessages(chat_uid string) ([]entities.Message, error) {
 	ctx := context.Background()
 
 	msgMap, err := r.redisClient.Rdb.HGetAll(
@@ -39,9 +39,10 @@ func (r RedisMessagesCache) GetMessages(chat_uid string, limit int, offset int) 
 		msg, err := entities.NewMessageFromJson(item)
 		if err != nil {
 			log.Println("cant decode msg json from redis")
-			messages[i] = msg
-			i++
+
 		}
+		messages[i] = msg
+		i++
 	}
 
 	return messages, nil
@@ -62,7 +63,6 @@ func (r RedisMessagesCache) SaveMessage(msg entities.Message) error {
 	}
 
 	return nil
-
 }
 
 func (r RedisMessagesCache) DeleteMessage(msg entities.Message) error {
@@ -71,11 +71,11 @@ func (r RedisMessagesCache) DeleteMessage(msg entities.Message) error {
 	err := r.redisClient.Rdb.HDel(
 		ctx,
 		fmt.Sprintf("chat:%s:messages", msg.ChatUid),
-        msg.Uid,
+		msg.Uid,
 	).Err()
 
 	if err != nil {
-        log.Println(err)
+		log.Println(err)
 		return err
 	}
 
