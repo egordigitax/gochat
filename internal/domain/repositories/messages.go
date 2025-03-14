@@ -23,5 +23,6 @@ type MessagesCache interface {
 		limit, offset int,
 	) ([]entities.Message, error)
 
+    DeleteMessage(msg entities.Message) error
 	SaveMessage(msg entities.Message) error
 }

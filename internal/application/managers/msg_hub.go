@@ -118,6 +118,7 @@ func (c *MessagesClient) GetMessageFromClient(
 	ctx context.Context,
 	msg dto.GetMessageFromClientPayload,
 ) {
+
 	// Get Message From Client Logic
 
 	c.Hub.msgCount++

@@ -55,9 +55,9 @@ func main() {
 
 	messagesHub := managers.NewMessagesHub(MessagesStorage, messagesBroker)
 	chatsHub := managers.NewChatsHub(messagesService, chatsService, messagesBroker)
-	savingHub := managers.NewSaveMessagesHub(messagesBroker, messagesService)
+	savingHub := managers.NewSaveMessagesHub(messagesBroker, messagesService, MessagesCache)
 
-    go savingHub.StartSavingPump()
+	go savingHub.StartSavingPump()
 
 	MessagesController := ws_api.NewMessagesWSController(messagesHub)
 	ChatsController := ws_api.NewChatsWSController(chatsHub)
