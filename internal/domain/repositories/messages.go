@@ -18,7 +18,7 @@ type MessagesStorage interface {
 }
 
 type MessagesCache interface {
-	GetMessages(
+	GetMessagesByChatUid(
 		chat_uid string,
 	) ([]entities.Message, error)
 

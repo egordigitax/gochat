@@ -20,10 +20,10 @@ func NewRedisMessagesCache(
 	}
 }
 
-func (r RedisMessagesCache) GetMessages(chat_uid string) ([]entities.Message, error) {
+func (r RedisMessagesCache) GetMessagesByChatUid(chat_uid string) ([]entities.Message, error) {
 	ctx := context.Background()
-
-	msgMap, err := r.redisClient.Rdb.HGetAll(
+    
+   	msgMap, err := r.redisClient.Rdb.HGetAll(
 		ctx,
 		fmt.Sprintf("chat:%s:messages", chat_uid),
 	).Result()

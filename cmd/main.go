@@ -13,13 +13,19 @@ import (
 	"chat-service/internal/infra/memory/redis_repos"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
+
+	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/joho/godotenv"
 )
 
 func main() {
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
 	fmt.Println(utils.GenerateJWT("51929f93-fd17-4e9d-b38c-31f4c26fa51c"))
 
 	if os.Getenv("SWAGGER_HOST") == "" {
@@ -61,7 +67,7 @@ func main() {
 	ChatsController := ws_api.NewChatsWSController(chatsHub)
 
 	go chatsHub.StartPumpChats()
-    go messagesHub.StartPumpMessages()
+	go messagesHub.StartPumpMessages()
 	go savingHub.StartSavingPump()
 
 	http.HandleFunc("/messages", func(w http.ResponseWriter, r *http.Request) {

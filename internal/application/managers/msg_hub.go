@@ -10,6 +10,7 @@ import (
 	"context"
 	"log"
 	"slices"
+
 	"sync"
 )
 
@@ -63,12 +64,10 @@ func (h *MessagesHub) StartPumpMessages() {
 }
 
 func (h *MessagesHub) RegisterClient(client *MessagesClient) {
-
-	//TODO: Check if client has access to this chat
-
-	h.countUsers++
 	h.mu.Lock()
 	defer h.mu.Unlock()
+
+	h.checkIfUserHasPrevConnectionUnsafe(client)
 
 	if h.clients[client.ChatUid] == nil {
 		h.clients[client.ChatUid] = make(map[string]*MessagesClient)
@@ -76,28 +75,44 @@ func (h *MessagesHub) RegisterClient(client *MessagesClient) {
 
 	h.clients[client.ChatUid][client.UserUid] = client
 
-	history, err := h.messages.GetMessagesHistory(client.ChatUid, 10, 0)
-	if err != nil {
-        log.Println("smth wrong:", err)
-	}
-
-    // TODO: move to GetMessagesHistory method and handle ASC/DESC orders
-    slices.Reverse(history)
-
-	for _, msg := range history {
-		client.Send <- dto.BuildSendMessageToClientPayloadFromEntity(msg)
-	}
+	client.SendMessagesHistory(10, 0)
 }
 
 func (h *MessagesHub) UnregisterClient(client *MessagesClient) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	if _, ok := h.clients[client.ChatUid][client.UserUid]; ok {
-		delete(h.clients[client.ChatUid], client.UserUid)
-		client.Conn.Close()
-		close(client.Send)
+	h.unregisterClientUnsafe(client)
+}
+
+// Unsafe methonds should be called only with Mutex Lock
+
+func (h *MessagesHub) isUserExistUnsafe(client *MessagesClient) (*MessagesClient, bool) {
+	client, ok := h.clients[client.ChatUid][client.UserUid]
+	return client, ok
+}
+
+func (h *MessagesHub) checkIfUserHasPrevConnectionUnsafe(client *MessagesClient) {
+	if oldClient, ok := h.isUserExistUnsafe(client); ok {
+		h.unregisterClientUnsafe(oldClient)
 	}
 }
+
+func (h *MessagesHub) unregisterClientUnsafe(client *MessagesClient) {
+	oldClient, ok := h.isUserExistUnsafe(client)
+	if !ok || oldClient != client {
+		return
+	}
+
+	delete(h.clients[client.ChatUid], client.UserUid)
+	oldClient.Conn.Close()
+	close(oldClient.Send)
+
+	if len(h.clients[client.ChatUid]) == 0 {
+		delete(h.clients, client.ChatUid)
+	}
+}
+
+//
 
 type MessagesClient struct {
 	Hub     *MessagesHub
@@ -113,7 +128,7 @@ func NewMessagesClient(
 	UserUid string, ChatUid string,
 ) *MessagesClient {
 
-	sendChan := make(chan dto.SendMessageToClientPayload, 1000)
+	sendChan := make(chan dto.SendMessageToClientPayload, 100)
 
 	return &MessagesClient{
 		Hub:     hub,
@@ -128,9 +143,6 @@ func (c *MessagesClient) GetMessageFromClient(
 	ctx context.Context,
 	msg dto.GetMessageFromClientPayload,
 ) {
-
-	// Get Message From Client Logic
-
 	c.Hub.msgCount++
 	log.Println("sent to users: ", c.Hub.msgCount)
 
@@ -151,10 +163,23 @@ func (c *MessagesClient) SendMessageToClient(
 	ctx context.Context,
 	msg entities.Message,
 ) error {
-
-	// Send Message To Client Logic
-
 	c.Send <- dto.BuildSendMessageToClientPayloadFromEntity(msg)
 
 	return nil
+}
+
+func (c *MessagesClient) SendMessagesHistory(limit, offset int) {
+	history, err := c.Hub.messages.GetMessagesHistory(c.ChatUid, limit, offset)
+	if err != nil {
+		log.Println("smth wrong:", err)
+		return
+	}
+
+	// TODO: ordering or handle it in GetMessagesHistory
+
+	slices.Reverse(history)
+
+	for _, msg := range history {
+		c.Send <- dto.BuildSendMessageToClientPayloadFromEntity(msg)
+	}
 }

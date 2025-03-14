@@ -82,18 +82,18 @@ func (m *MessagesWSController) StartClientRead(
     
     // TODO: test cancel, and add it to defer if it works fine
 
-	ctx, _ := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 
 	defer func() {
 		client.Hub.UnregisterClient(client)
-		// cancel()
+		cancel()
 	}()
 
 	for {
 		var msg dto.GetMessageFromClientPayload
 		err := client.Conn.ReadJSON(&msg)
 		if err != nil {
-			log.Println("[ERROR] WebSocket Read:", err)
+			// log.Println("[ERROR] WebSocket Read:", err)
 			break
 		}
 
