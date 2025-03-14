@@ -9,8 +9,8 @@ import (
 	"chat-service/internal/schema/dto"
 	"context"
 	"log"
+	"slices"
 	"sync"
-
 )
 
 type MessagesHub struct {
@@ -80,6 +80,9 @@ func (h *MessagesHub) RegisterClient(client *MessagesClient) {
 	if err != nil {
         log.Println("smth wrong:", err)
 	}
+
+    // TODO: move to GetMessagesHistory method and handle ASC/DESC orders
+    slices.Reverse(history)
 
 	for _, msg := range history {
 		client.Send <- dto.BuildSendMessageToClientPayloadFromEntity(msg)
