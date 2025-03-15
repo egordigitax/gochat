@@ -21,8 +21,6 @@ func NewMessageService(
 	}
 }
 
-var _ repositories.MessageService = MessageService{}
-
 func (m *MessageService) GetMessagesHistory(chatUID string, limit, offset int) ([]entities.Message, error) {
 	cacheMsgs, err := m.MessagesCache.GetMessagesByChatUid(chatUID)
 	if err != nil {
@@ -32,8 +30,7 @@ func (m *MessageService) GetMessagesHistory(chatUID string, limit, offset int) (
 	lenCache := len(cacheMsgs)
 	log.Println(lenCache)
 
-	// TODO: if save pump fails, messages stuck in memory
-	// also messages in cache dont have created_at and cant be sorted
+	// TODO: also messages in cache dont have created_at and cant be sorted
 
 	var result []entities.Message
 

@@ -16,15 +16,17 @@ import (
 	"os"
 
 	"net/http"
-	_ "net/http/pprof"
+	// _ "net/http/pprof"
 
 	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 )
 
 func main() {
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
+	// go func() {
+	// 	log.Println(http.ListenAndServe("localhost:6060", nil))
+	// }()
+	// uncomment for memory debug via pprof
 
 	fmt.Println(utils.GenerateJWT("51929f93-fd17-4e9d-b38c-31f4c26fa51c"))
 
@@ -37,6 +39,17 @@ func main() {
 	} else {
 		log.Println("Load ENV from OS")
 	}
+
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("./configs")
+
+	if err := viper.ReadInConfig(); err != nil {
+		panic(err)
+	}
+
+    viper.AutomaticEnv()
+
 
 	redisClient := memory.NewRedisClient()
 	postgresClient := postgres.NewPostgresClient()

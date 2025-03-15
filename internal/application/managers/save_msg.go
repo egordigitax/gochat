@@ -40,9 +40,6 @@ func (s *SaveMessagesHub) StartSavingPump() error {
 		return err
 	}
 
-    // И дальше надо перекидывать все сообщения из саба в очередь на сохранение с ack
-    // Или от юзера сразу его складывать в очередь, а здесь забирать и сохранять, после чего отправлять паб в основной канал сообщений
-
 	ticker := time.NewTicker(500 * time.Millisecond)
 
 	defer func() {

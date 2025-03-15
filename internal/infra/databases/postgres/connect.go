@@ -1,12 +1,13 @@
 package postgres
 
 import (
+	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/spf13/viper"
 )
 
 type PostgresClient struct {
@@ -15,17 +16,37 @@ type PostgresClient struct {
 }
 
 func NewPostgresClient() *PostgresClient {
-	client := &PostgresClient{
-		C_RO: sqlx.MustConnect("postgres", os.Getenv("POSTGRES_URI_RO")+" application_name=backoffice_service"),
-		C_RW: sqlx.MustConnect("postgres", os.Getenv("POSTGRES_URI_RW")+" application_name=backoffice_service"),
+
+	getDSN := func() string {
+		return fmt.Sprintf(
+			"host=%s "+
+				"user=%s "+
+				"password=%s "+
+				"dbname=%s "+
+				"port=%d "+
+				"sslmode=%s "+
+				"TimeZone=%s",
+			viper.GetString("database.host"),
+			viper.GetString("database.user"),
+			viper.GetString("database.password"),
+			viper.GetString("database.dbname"),
+			viper.GetInt("database.port"),
+			viper.GetString("database.sslmode"),
+			viper.GetString("database.timezone"),
+		)
 	}
 
-	client.C_RO.SetMaxOpenConns(4)
-	client.C_RW.SetMaxOpenConns(4)
-	client.C_RO.SetMaxIdleConns(4)
-	client.C_RW.SetMaxIdleConns(4)
-	client.C_RO.SetConnMaxLifetime(60 * time.Second)
-	client.C_RW.SetConnMaxLifetime(60 * time.Second)
+	client := &PostgresClient{
+		C_RO: sqlx.MustConnect("postgres", getDSN()),
+		C_RW: sqlx.MustConnect("postgres", getDSN()),
+	}
+
+	client.C_RO.SetMaxOpenConns(viper.GetInt("database.max_open_conns"))
+	client.C_RW.SetMaxOpenConns(viper.GetInt("database.max_open_conns"))
+	client.C_RO.SetMaxIdleConns(viper.GetInt("database.max_idle_conns"))
+	client.C_RW.SetMaxIdleConns(viper.GetInt("database.max_idle_conns"))
+	client.C_RO.SetConnMaxLifetime(viper.GetDuration("database.conn_max_lifetime") * time.Second)
+	client.C_RW.SetConnMaxLifetime(viper.GetDuration("database.conn_max_lifetime") * time.Second)
 
 	log.Println("PostgresDB connected")
 	return client

@@ -9,7 +9,6 @@ import (
 )
 
 //TODO: Use worker pool instead goroutines directly
-//TODO: Move it to Controller struct
 
 type ChatsWSController struct {
 	hub *managers.ChatsHub

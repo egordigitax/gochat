@@ -3,9 +3,11 @@ package broker
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/spf13/viper"
 )
 
 type RedisBroker struct {
@@ -16,9 +18,13 @@ func NewRedisBroker() *RedisBroker {
 
 	ctx := context.Background()
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379", // Redis address
-		Password: "",               // No password
-		DB:       0,
+		Addr: fmt.Sprintf(
+			"%s:%d",
+			viper.GetString("broker.host"),
+			viper.GetInt("broker.port"),
+		),
+		Password: viper.GetString("broker.password"),
+		DB:       viper.GetInt("broker.db"),
 	})
 
 	err := rdb.Ping(ctx).Err()

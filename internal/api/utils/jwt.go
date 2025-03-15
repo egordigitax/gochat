@@ -2,13 +2,13 @@ package utils
 
 import (
 	"errors"
-	"os"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/spf13/viper"
 )
 
-var jwtSecret = []byte(os.Getenv("JWT_SECRET_API"))
+var jwtSecret = []byte(viper.GetString("jwt.secret"))
 
 func GenerateJWT(userID string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

@@ -2,9 +2,11 @@ package memory
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/spf13/viper"
 )
 
 type RedisClient struct {
@@ -14,9 +16,13 @@ type RedisClient struct {
 func NewRedisClient() *RedisClient {
 	ctx := context.Background()
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379", // Redis address
-		Password: "",               // No password
-		DB:       0,                // Default DB
+		Addr: fmt.Sprintf(
+			"%s:%d",
+			viper.GetString("memory.host"),
+			viper.GetInt("memory.port"),
+		),
+		Password: viper.GetString("memory.password"),
+		DB:       viper.GetInt("memory.db"),
 	})
 
 	err := rdb.Ping(ctx).Err()

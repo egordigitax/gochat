@@ -1,0 +1,30 @@
+app:
+  name: "chat"
+  port: 8080
+  save_rate: 500
+  users_msg_buff: 1000
+  global_buff: 10000
+database:
+  host: "localhost"
+  port: 6432
+  user: "postgres"
+  password: "12345678"
+  dbname: "aaaaa"
+  sslmode: "disable"
+  timezone: "UTC"
+  max_open_conns: 4 
+  max_idle_conns: 4
+  conn_max_lifetime: 60
+jwt:
+  secret: "some_secret"
+memory:
+  host: "localhost"
+  port: "6379"
+  password: ""
+  db: 0
+broker:
+  host: "localhost"
+  port: "6379"
+  password: ""
+  db: 0
+

@@ -25,7 +25,9 @@ func (r RedisMessagesBroker) GetMessagesFromQueue(ctx context.Context, topic str
 	go func() {
 		for {
 			msg, err := r.redisClient.FromQueue(ctx, topic)
-			log.Println("error during fetching data from queue: ", err)
+			if err != nil {
+				log.Println("error during fetching data from queue: ", err)
+			}
 			message, err := entities.NewMessageFromJson(msg)
 			if err != nil {
 				log.Println("error while unmarshal message from queue")
