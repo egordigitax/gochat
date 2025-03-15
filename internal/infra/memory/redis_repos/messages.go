@@ -22,27 +22,26 @@ func NewRedisMessagesCache(
 
 func (r RedisMessagesCache) GetMessagesByChatUid(chat_uid string) ([]entities.Message, error) {
 	ctx := context.Background()
-    
-   	msgMap, err := r.redisClient.Rdb.HGetAll(
+
+	msgList, err := r.redisClient.Rdb.LRange(
 		ctx,
 		fmt.Sprintf("chat:%s:messages", chat_uid),
+		0, -1,
 	).Result()
 
 	if err != nil {
 		return nil, err
 	}
 
-	messages := make([]entities.Message, len(msgMap))
+	messages := make([]entities.Message, len(msgList))
 
-	i := 0
-	for _, item := range msgMap {
+	for i, item := range msgList {
 		msg, err := entities.NewMessageFromJson(item)
 		if err != nil {
 			log.Println("cant decode msg json from redis")
-
+			continue
 		}
 		messages[i] = msg
-		i++
 	}
 
 	return messages, nil
@@ -51,34 +50,29 @@ func (r RedisMessagesCache) GetMessagesByChatUid(chat_uid string) ([]entities.Me
 func (r RedisMessagesCache) SaveMessage(msg entities.Message) error {
 	ctx := context.Background()
 
-	err := r.redisClient.Rdb.HSet(
+	err := r.redisClient.Rdb.LPush(
 		ctx,
 		fmt.Sprintf("chat:%s:messages", msg.ChatUid),
-		msg.Uid,
 		msg.ToJSON(),
 	).Err()
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (r RedisMessagesCache) DeleteMessage(msg entities.Message) error {
 	ctx := context.Background()
 
-	err := r.redisClient.Rdb.HDel(
+	// Redis lists don't support direct deletion of an element, so we use LREM
+	err := r.redisClient.Rdb.LRem(
 		ctx,
 		fmt.Sprintf("chat:%s:messages", msg.ChatUid),
-		msg.Uid,
+		1, // Remove only one matching occurrence
+		msg.ToJSON(),
 	).Err()
 
 	if err != nil {
 		log.Println(err)
-		return err
 	}
 
-	return nil
-
+	return err
 }

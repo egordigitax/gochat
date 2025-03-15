@@ -2,9 +2,7 @@ package repositories
 
 import "chat-service/internal/domain/entities"
 
-
 type MessageService interface {
-
 }
 
 type MessagesStorage interface {
@@ -14,7 +12,7 @@ type MessagesStorage interface {
 	) ([]entities.Message, error)
 
 	SaveMessage(msg entities.Message) error
-    SaveMessagesBulk(msg ...entities.Message) error 
+	SaveMessagesBulk(msg ...entities.Message) error
 }
 
 type MessagesCache interface {
@@ -22,6 +20,6 @@ type MessagesCache interface {
 		chat_uid string,
 	) ([]entities.Message, error)
 
-    DeleteMessage(msg entities.Message) error
+	DeleteMessage(msg entities.Message) error
 	SaveMessage(msg entities.Message) error
 }

@@ -40,7 +40,7 @@ func NewMessagesHub(
 func (h *MessagesHub) StartPumpMessages() {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	msgChan, err := h.broker.GetMessagesFromChannel(ctx, constants.CHATS_CHANNEL)
+	msgChan, err := h.broker.GetMessagesFromChannel(ctx, constants.SAVED_MESSAGES_CHANNEL)
 	if err != nil {
 		log.Println(err)
 	}
@@ -67,7 +67,7 @@ func (h *MessagesHub) RegisterClient(client *MessagesClient) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	h.checkIfUserHasPrevConnectionUnsafe(client)
+	// h.checkIfUserHasPrevConnectionUnsafe(client)
 
 	if h.clients[client.ChatUid] == nil {
 		h.clients[client.ChatUid] = make(map[string]*MessagesClient)
@@ -148,9 +148,9 @@ func (c *MessagesClient) GetMessageFromClient(
 
 	message := msg.ToEntity()
 
-	err := c.Hub.broker.SendMessageToChannel(
+	err := c.Hub.broker.SendMessageToQueue(
 		ctx,
-		constants.CHATS_CHANNEL,
+		constants.CHATS_QUEUE,
 		message,
 	)
 

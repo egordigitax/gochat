@@ -80,7 +80,7 @@ func main() {
 
 	log.Println("Server started on :8080")
 
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8081", nil)
 
 	if err != nil {
 		panic(err)

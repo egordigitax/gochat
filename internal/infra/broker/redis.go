@@ -16,9 +16,9 @@ func NewRedisBroker() *RedisBroker {
 
 	ctx := context.Background()
 	rdb := redis.NewClient(&redis.Options{
-		Addr:            "localhost:6379", // Redis address
-		Password:        "",               // No password
-		DB:              0,
+		Addr:     "localhost:6379", // Redis address
+		Password: "",               // No password
+		DB:       0,
 	})
 
 	err := rdb.Ping(ctx).Err()
@@ -55,7 +55,7 @@ func (r RedisBroker) Publish(ctx context.Context, topic string, message string) 
 func (r RedisBroker) Subscribe(ctx context.Context, topics ...string) (chan string, error) {
 	sub := r.redisClient.Subscribe(ctx, topics...)
 
-    log.Println("CREATED SUBSCIBE")
+	log.Println("CREATED SUBSCIBE")
 
 	if sub == nil {
 		return nil, errors.New("failed to subscribe")
@@ -73,4 +73,26 @@ func (r RedisBroker) Subscribe(ctx context.Context, topics ...string) (chan stri
 	}()
 
 	return msgCh, nil
+}
+
+func (r RedisBroker) FromQueue(ctx context.Context, topic string) (string, error) {
+	task, err := r.redisClient.BLPop(ctx, 0, topic).Result()
+	if err != nil {
+		return "", err
+	}
+
+	if len(task) < 2 {
+		return "", errors.New("no values found")
+	}
+
+	return task[1], err
+}
+
+// ToQueue implements events.BrokerBaseAdaptor.
+func (r RedisBroker) ToQueue(ctx context.Context, topic string, message string) error {
+	err := r.redisClient.RPush(ctx, topic, message).Err()
+	if err != nil {
+		return err
+	}
+	return nil
 }

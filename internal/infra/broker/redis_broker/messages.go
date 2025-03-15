@@ -4,6 +4,7 @@ import (
 	"chat-service/internal/domain/entities"
 	"chat-service/internal/domain/events"
 	"context"
+	"log"
 )
 
 type RedisMessagesBroker struct {
@@ -16,6 +17,28 @@ func NewRedisMessagesBroker(
 	return &RedisMessagesBroker{
 		redisClient: redisClient,
 	}
+}
+
+func (r RedisMessagesBroker) GetMessagesFromQueue(ctx context.Context, topic string) (chan entities.Message, error) {
+	messages := make(chan entities.Message, 1000)
+
+	go func() {
+		for {
+			msg, err := r.redisClient.FromQueue(ctx, topic)
+			log.Println("error during fetching data from queue: ", err)
+			message, err := entities.NewMessageFromJson(msg)
+			if err != nil {
+				log.Println("error while unmarshal message from queue")
+			}
+			messages <- message
+		}
+	}()
+
+	return messages, nil
+}
+
+func (r RedisMessagesBroker) SendMessageToQueue(ctx context.Context, topic string, msg entities.Message) error {
+	return r.redisClient.ToQueue(ctx, topic, msg.ToJSON())
 }
 
 func (r *RedisMessagesBroker) GetMessagesFromChannel(

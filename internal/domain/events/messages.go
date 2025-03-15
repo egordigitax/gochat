@@ -15,4 +15,13 @@ type BrokerMessagesAdaptor interface {
 		topic string,
 		msg entities.Message,
 	) error
+	GetMessagesFromQueue(
+		ctx context.Context,
+		topic string,
+	) (chan entities.Message, error)
+	SendMessageToQueue(
+		ctx context.Context,
+		topic string,
+		msg entities.Message,
+	) error
 }
