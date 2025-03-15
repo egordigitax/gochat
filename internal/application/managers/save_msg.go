@@ -10,6 +10,8 @@ import (
 	"log"
 	"slices"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 type SaveMessagesHub struct {
@@ -40,7 +42,9 @@ func (s *SaveMessagesHub) StartSavingPump() error {
 		return err
 	}
 
-	ticker := time.NewTicker(500 * time.Millisecond)
+	ticker := time.NewTicker(
+		viper.GetDuration("app.save_rate") * time.Millisecond,
+	)
 
 	defer func() {
 		ticker.Stop()
@@ -70,8 +74,6 @@ func (s *SaveMessagesHub) StartSavingPump() error {
 			if err != nil {
 				log.Println("Bulk save failed")
 			}
-
-			// Range over redis cache instead of chan OR push all redis cache on app start to msg chan <--
 
 			for _, msg := range toSaveArr {
 				err = s.broker.SendMessageToChannel(

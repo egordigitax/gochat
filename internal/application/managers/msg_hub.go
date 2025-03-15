@@ -12,6 +12,8 @@ import (
 	"slices"
 
 	"sync"
+
+	"github.com/spf13/viper"
 )
 
 type MessagesHub struct {
@@ -51,14 +53,11 @@ func (h *MessagesHub) StartPumpMessages() {
 
 	for {
 		msg := <-msgChan
-
 		h.mu.RLock()
 		clients := h.clients[msg.ChatUid]
-
 		for _, user := range clients {
 			user.SendMessageToClient(ctx, msg)
 		}
-
 		h.mu.RUnlock()
 	}
 }
@@ -128,7 +127,10 @@ func NewMessagesClient(
 	UserUid string, ChatUid string,
 ) *MessagesClient {
 
-	sendChan := make(chan dto.SendMessageToClientPayload, 100)
+	sendChan := make(
+		chan dto.SendMessageToClientPayload,
+		viper.GetInt("app.users_msg_buff"),
+	)
 
 	return &MessagesClient{
 		Hub:     hub,
@@ -153,7 +155,6 @@ func (c *MessagesClient) GetMessageFromClient(
 		constants.CHATS_QUEUE,
 		message,
 	)
-
 	if err != nil {
 		log.Println(err.Error())
 	}

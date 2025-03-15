@@ -99,6 +99,8 @@ func (m *MessagesWSController) StartClientRead(
 
 		msg.Msg.AuthorUid = client.UserUid
 		msg.Msg.ChatUid = client.ChatUid
+        
+        // TODO: Handle different action types from user
 
 		err = msg.Validate()
 		if err != nil {

@@ -67,13 +67,20 @@ func (r RedisBroker) Subscribe(ctx context.Context, topics ...string) (chan stri
 		return nil, errors.New("failed to subscribe")
 	}
 
-	msgCh := make(chan string, 1000)
+	msgCh := make(
+		chan string,
+		viper.GetInt("app.global_buff"),
+	)
 
 	go func() {
 		defer close(msgCh)
 		defer sub.Close()
 
-		for msg := range sub.Channel(redis.WithChannelSize(1000)) {
+		for msg := range sub.Channel(
+			redis.WithChannelSize(
+				viper.GetInt("app.global_buff"),
+			),
+		) {
 			msgCh <- msg.Payload
 		}
 	}()

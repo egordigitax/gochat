@@ -5,6 +5,8 @@ import (
 	"chat-service/internal/domain/events"
 	"context"
 	"log"
+
+	"github.com/spf13/viper"
 )
 
 type RedisMessagesBroker struct {
@@ -20,7 +22,7 @@ func NewRedisMessagesBroker(
 }
 
 func (r RedisMessagesBroker) GetMessagesFromQueue(ctx context.Context, topic string) (chan entities.Message, error) {
-	messages := make(chan entities.Message, 1000)
+	messages := make(chan entities.Message, viper.GetInt("app.global_buff"))
 
 	go func() {
 		for {
@@ -53,7 +55,7 @@ func (r *RedisMessagesBroker) GetMessagesFromChannel(
 		return nil, err
 	}
 
-	msgChan := make(chan entities.Message, 1000)
+	msgChan := make(chan entities.Message, viper.GetInt("app.global_buff"))
 
 	go func() {
 		defer close(msgChan)
