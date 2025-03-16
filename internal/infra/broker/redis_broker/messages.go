@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+// implements events.BrokerMessagesAdaptor
+
 type RedisMessagesBroker struct {
 	redisClient events.BrokerBaseAdaptor
 }

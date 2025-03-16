@@ -1,7 +1,7 @@
 app:
   name: "chat"
-  port: 8080
-  save_rate: 500
+  port: 8081
+  save_rate: 300
   users_msg_buff: 1000
   global_buff: 10000
 database:

@@ -48,8 +48,7 @@ func main() {
 		panic(err)
 	}
 
-    viper.AutomaticEnv()
-
+	viper.AutomaticEnv()
 
 	redisClient := memory.NewRedisClient()
 	postgresClient := postgres.NewPostgresClient()
@@ -79,21 +78,16 @@ func main() {
 	MessagesController := ws_api.NewMessagesWSController(messagesHub)
 	ChatsController := ws_api.NewChatsWSController(chatsHub)
 
+	MessagesController.Handle()
+	ChatsController.Handle()
+
 	go chatsHub.StartPumpChats()
 	go messagesHub.StartPumpMessages()
 	go savingHub.StartSavingPump()
 
-	http.HandleFunc("/messages", func(w http.ResponseWriter, r *http.Request) {
-		MessagesController.ServeMessagesWebSocket(w, r)
-	})
-
-	http.HandleFunc("/chats", func(w http.ResponseWriter, r *http.Request) {
-		ChatsController.ServeChatsWebSocket(w, r)
-	})
-
 	log.Println("Server started on :8080")
 
-	err := http.ListenAndServe(":8081", nil)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", viper.GetInt("app.port")), nil)
 
 	if err != nil {
 		panic(err)

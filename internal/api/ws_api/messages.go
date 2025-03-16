@@ -24,6 +24,12 @@ func NewMessagesWSController(
 	}
 }
 
+func (m *MessagesWSController) Handle() {
+	http.HandleFunc("/messages", func(w http.ResponseWriter, r *http.Request) {
+		m.ServeMessagesWebSocket(w, r)
+	})
+}
+
 func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *http.Request) {
 	userID, err := utils.GetUserIDFromHeader(
 		r.Header.Get("Authorization"),
@@ -79,8 +85,8 @@ func (m *MessagesWSController) StartClientWrite(
 func (m *MessagesWSController) StartClientRead(
 	client *managers.MessagesClient,
 ) {
-    
-    // TODO: test cancel, and add it to defer if it works fine
+
+	// TODO: test cancel, and add it to defer if it works fine
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -99,8 +105,8 @@ func (m *MessagesWSController) StartClientRead(
 
 		msg.Msg.AuthorUid = client.UserUid
 		msg.Msg.ChatUid = client.ChatUid
-        
-        // TODO: Handle different action types from user
+
+		// TODO: Handle different action types from user
 
 		err = msg.Validate()
 		if err != nil {

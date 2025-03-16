@@ -74,7 +74,7 @@ func (h *MessagesHub) RegisterClient(client *MessagesClient) {
 
 	h.clients[client.ChatUid][client.UserUid] = client
 
-	client.SendMessagesHistory(10, 0)
+	client.SendMessagesHistory(3, 0)
 }
 
 func (h *MessagesHub) UnregisterClient(client *MessagesClient) {

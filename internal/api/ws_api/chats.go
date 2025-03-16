@@ -22,6 +22,12 @@ func NewChatsWSController(
 	}
 }
 
+func (c *ChatsWSController) Handle() {
+	http.HandleFunc("/chats", func(w http.ResponseWriter, r *http.Request) {
+		c.ServeChatsWebSocket(w, r)
+	})
+}
+
 func (c *ChatsWSController) ServeChatsWebSocket(w http.ResponseWriter, r *http.Request) {
 	userID, err := utils.GetUserIDFromHeader(r.Header.Get("Authorization"))
 	if err != nil {
@@ -61,6 +67,7 @@ func (c *ChatsWSController) StartClientWrite(client *managers.ChatsClient) {
 		}
 	}
 }
+
 //
 // func (c *ChatsWSController) StartClientRead(client *managers.ChatsClient) {
 // 	defer func() {

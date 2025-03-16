@@ -10,6 +10,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+// implements events.BaseBrokerAdaptor
+
 type RedisBroker struct {
 	redisClient *redis.Client
 }
@@ -61,8 +63,6 @@ func (r RedisBroker) Publish(ctx context.Context, topic string, message string) 
 func (r RedisBroker) Subscribe(ctx context.Context, topics ...string) (chan string, error) {
 	sub := r.redisClient.Subscribe(ctx, topics...)
 
-	log.Println("CREATED SUBSCIBE")
-
 	if sub == nil {
 		return nil, errors.New("failed to subscribe")
 	}
@@ -101,7 +101,6 @@ func (r RedisBroker) FromQueue(ctx context.Context, topic string) (string, error
 	return task[1], err
 }
 
-// ToQueue implements events.BrokerBaseAdaptor.
 func (r RedisBroker) ToQueue(ctx context.Context, topic string, message string) error {
 	err := r.redisClient.RPush(ctx, topic, message).Err()
 	if err != nil {
