@@ -52,6 +52,8 @@ func (s *SaveMessagesHub) StartSavingPump() error {
 
 	var toSaveArr []entities.Message
 
+	log.Println("Saving pump started")
+
 	for {
 		select {
 		case msg, ok := <-msgChan:

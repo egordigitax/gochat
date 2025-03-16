@@ -46,7 +46,7 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 		return
 	}
 
-	upgrader := utils.GetUpgrader()
+	upgrader := GetUpgrader()
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

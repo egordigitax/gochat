@@ -44,6 +44,8 @@ func (h *ChatsHub) StartPumpChats() {
 	ticker := time.NewTicker(1 * time.Second)
 	chats := make(map[string]struct{})
 
+    log.Println("Chats pump started")
+
 	for {
 
 		select {

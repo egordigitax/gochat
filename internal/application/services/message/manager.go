@@ -50,6 +50,8 @@ func (h *MessagesHub) StartPumpMessages() {
 		cancel()
 	}()
 
+	log.Println("Messages pump started")
+
 	for {
 		msg := <-msgChan
 		h.mu.RLock()

@@ -72,9 +72,19 @@ func main() {
 	broker := broker.NewRedisBroker()
 	messagesBroker := redis_broker.NewRedisMessagesBroker(broker)
 
-	messagesHub := message.NewMessagesHub(messagesService, messagesBroker)
-	chatsHub := chat.NewChatsHub(chatsService, messagesBroker)
-	savingHub := history.NewSaveMessagesHub(messagesBroker, messagesCache, messagesStorage)
+	messagesHub := message.NewMessagesHub(
+		messagesService,
+		messagesBroker,
+	)
+	chatsHub := chat.NewChatsHub(
+		chatsService,
+		messagesBroker,
+	)
+	savingHub := history.NewSaveMessagesHub(
+		messagesBroker,
+		messagesCache,
+		messagesStorage,
+	)
 
 	messagesController := ws_api.NewMessagesWSController(messagesHub)
 	chatsController := ws_api.NewChatsWSController(chatsHub)
@@ -86,7 +96,7 @@ func main() {
 	go messagesHub.StartPumpMessages()
 	go savingHub.StartSavingPump()
 
-	log.Println("Server started on :8080")
+	log.Println(fmt.Sprintf("Server started on :%d", viper.GetInt("app.port")))
 
 	err := http.ListenAndServe(fmt.Sprintf(":%d", viper.GetInt("app.port")), nil)
 

@@ -1,4 +1,4 @@
-package utils
+package ws_api
 
 import (
 	"github.com/gorilla/websocket"

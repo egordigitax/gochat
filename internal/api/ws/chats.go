@@ -35,7 +35,7 @@ func (c *ChatsWSController) ServeChatsWebSocket(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	upgrader := utils.GetUpgrader()
+	upgrader := GetUpgrader()
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
