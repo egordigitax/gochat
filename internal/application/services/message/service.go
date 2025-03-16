@@ -1,4 +1,4 @@
-package services
+package message
 
 import (
 	"chat-service/internal/domain/entities"
@@ -62,4 +62,8 @@ func (m *MessageService) GetMessagesHistory(chatUID string, limit, offset int) (
 		log.Println("got all from db")
 		return dbMsgs, nil
 	}
+}
+
+func (m MessageService) SaveMessagesBulk(msgs ...entities.Message) error {
+	return m.MessagesStorage.SaveMessagesBulk(msgs...)
 }

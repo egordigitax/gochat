@@ -1,4 +1,4 @@
-package services
+package chat
 
 import (
 	"chat-service/internal/domain/repositories"
@@ -52,7 +52,7 @@ func (m *ChatsService) GetChatsByUserUid(
 }
 
 func (m *ChatsService) GetAllUsersFromChatByUid(chat_uid string) ([]string, error) {
-    // get from 
+	// get from
 	return m.ChatsStorage.GetAllUsersFromChatByUid(chat_uid)
 }
 

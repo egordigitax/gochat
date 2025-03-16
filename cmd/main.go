@@ -2,9 +2,10 @@ package main
 
 import (
 	"chat-service/internal/api/utils"
-	"chat-service/internal/api/ws_api"
-	"chat-service/internal/application/managers"
-	"chat-service/internal/application/services"
+	"chat-service/internal/api/ws"
+	"chat-service/internal/application/services/chat"
+	"chat-service/internal/application/services/history"
+	"chat-service/internal/application/services/message"
 	"chat-service/internal/infra/broker"
 	"chat-service/internal/infra/broker/redis_broker"
 	"chat-service/internal/infra/databases/postgres"
@@ -53,33 +54,33 @@ func main() {
 	redisClient := memory.NewRedisClient()
 	postgresClient := postgres.NewPostgresClient()
 
-	MessagesCache := redis_repos.NewRedisMessagesCache(redisClient)
-	ChatsCache := redis_repos.NewRedisChatsCache(redisClient)
+	messagesCache := redis_repos.NewRedisMessagesCache(redisClient)
+	chatsCache := redis_repos.NewRedisChatsCache(redisClient)
 
-	MessagesStorage := postgres_repos.NewPGMessagesStorage(postgresClient)
-	ChatsStorage := postgres_repos.NewPGChatsStorage(postgresClient)
+	messagesStorage := postgres_repos.NewPGMessagesStorage(postgresClient)
+	chatsStorage := postgres_repos.NewPGChatsStorage(postgresClient)
 
-	messagesService := services.NewMessageService(
-		MessagesStorage,
-		MessagesCache,
+	messagesService := message.NewMessageService(
+		messagesStorage,
+		messagesCache,
 	)
-	chatsService := services.NewChatsService(
-		ChatsStorage,
-		ChatsCache,
+	chatsService := chat.NewChatsService(
+		chatsStorage,
+		chatsCache,
 	)
 
 	broker := broker.NewRedisBroker()
 	messagesBroker := redis_broker.NewRedisMessagesBroker(broker)
 
-	messagesHub := managers.NewMessagesHub(messagesService, messagesBroker)
-	chatsHub := managers.NewChatsHub(messagesService, chatsService, messagesBroker)
-	savingHub := managers.NewSaveMessagesHub(messagesBroker, messagesService, MessagesCache)
+	messagesHub := message.NewMessagesHub(messagesService, messagesBroker)
+	chatsHub := chat.NewChatsHub(chatsService, messagesBroker)
+	savingHub := history.NewSaveMessagesHub(messagesBroker, messagesCache, messagesStorage)
 
-	MessagesController := ws_api.NewMessagesWSController(messagesHub)
-	ChatsController := ws_api.NewChatsWSController(chatsHub)
+	messagesController := ws_api.NewMessagesWSController(messagesHub)
+	chatsController := ws_api.NewChatsWSController(chatsHub)
 
-	MessagesController.Handle()
-	ChatsController.Handle()
+	messagesController.Handle()
+	chatsController.Handle()
 
 	go chatsHub.StartPumpChats()
 	go messagesHub.StartPumpMessages()

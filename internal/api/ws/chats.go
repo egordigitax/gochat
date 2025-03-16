@@ -2,7 +2,7 @@ package ws_api
 
 import (
 	"chat-service/internal/api/utils"
-	"chat-service/internal/application/managers"
+	"chat-service/internal/application/services/chat"
 	"chat-service/internal/schema/dto"
 	"log"
 	"net/http"
@@ -11,11 +11,11 @@ import (
 //TODO: Use worker pool instead goroutines directly
 
 type ChatsWSController struct {
-	hub *managers.ChatsHub
+	hub *chat.ChatsHub
 }
 
 func NewChatsWSController(
-	hub *managers.ChatsHub,
+	hub *chat.ChatsHub,
 ) *ChatsWSController {
 	return &ChatsWSController{
 		hub: hub,
@@ -43,7 +43,7 @@ func (c *ChatsWSController) ServeChatsWebSocket(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	client := &managers.ChatsClient{
+	client := &chat.ChatsClient{
 		Hub:    c.hub,
 		Conn:   conn,
 		UserID: userID,
@@ -56,7 +56,7 @@ func (c *ChatsWSController) ServeChatsWebSocket(w http.ResponseWriter, r *http.R
 	go c.StartClientWrite(client)
 }
 
-func (c *ChatsWSController) StartClientWrite(client *managers.ChatsClient) {
+func (c *ChatsWSController) StartClientWrite(client *chat.ChatsClient) {
 	defer func() {
 		c.hub.UnregisterClient(client)
 	}()

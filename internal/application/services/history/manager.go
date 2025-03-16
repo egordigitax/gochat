@@ -1,8 +1,7 @@
-package managers
+package history
 
 import (
 	"chat-service/internal/application/constants"
-	"chat-service/internal/application/services"
 	"chat-service/internal/domain/entities"
 	"chat-service/internal/domain/events"
 	"chat-service/internal/domain/repositories"
@@ -17,19 +16,19 @@ import (
 type SaveMessagesHub struct {
 	broker     events.BrokerMessagesAdaptor
 	memory     repositories.MessagesCache
-	messages   *services.MessageService
+	storage    repositories.MessagesStorage
 	savedCount int
 }
 
 func NewSaveMessagesHub(
 	broker events.BrokerMessagesAdaptor,
-	messagesService *services.MessageService,
 	memory repositories.MessagesCache,
+	storage repositories.MessagesStorage,
 ) *SaveMessagesHub {
 	return &SaveMessagesHub{
-		broker:   broker,
-		messages: messagesService,
-		memory:   memory,
+		broker:  broker,
+		memory:  memory,
+		storage: storage,
 	}
 }
 
@@ -70,7 +69,7 @@ func (s *SaveMessagesHub) StartSavingPump() error {
 
 			slices.Reverse(toSaveArr)
 
-			err := s.messages.MessagesStorage.SaveMessagesBulk(toSaveArr...)
+			err := s.storage.SaveMessagesBulk(toSaveArr...)
 			if err != nil {
 				log.Println("Bulk save failed")
 			}

@@ -1,9 +1,8 @@
-package managers
+package chat
 
 import (
 	"chat-service/internal/application/constants"
 	"chat-service/internal/application/ports"
-	"chat-service/internal/application/services"
 	"chat-service/internal/domain/events"
 	"chat-service/internal/schema/dto"
 	"context"
@@ -16,21 +15,18 @@ type ChatsHub struct {
 	broker          events.BrokerMessagesAdaptor
 	clients         map[string]*ChatsClient
 	isChatHasClient map[string]map[string]bool
-	messages        *services.MessageService
-	chats           *services.ChatsService
+	chats           IChatsService
 	mu              sync.RWMutex
 }
 
 func NewChatsHub(
-	messagesService *services.MessageService,
-	chatsService *services.ChatsService,
+	chatsService IChatsService,
 	messagesBroker events.BrokerMessagesAdaptor,
 ) *ChatsHub {
 	return &ChatsHub{
-		clients:  make(map[string]*ChatsClient),
-		messages: messagesService,
-		chats:    chatsService,
-		broker:   messagesBroker,
+		clients: make(map[string]*ChatsClient),
+		chats:   chatsService,
+		broker:  messagesBroker,
 	}
 }
 

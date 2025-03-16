@@ -1,9 +1,8 @@
-package managers
+package message
 
 import (
 	"chat-service/internal/application/constants"
 	"chat-service/internal/application/ports"
-	"chat-service/internal/application/services"
 	"chat-service/internal/domain/entities"
 	"chat-service/internal/domain/events"
 	"chat-service/internal/schema/dto"
@@ -19,14 +18,14 @@ import (
 type MessagesHub struct {
 	broker     events.BrokerMessagesAdaptor
 	clients    map[string]map[string]*MessagesClient
-	messages   *services.MessageService
+	messages   IMessagesService
 	mu         sync.RWMutex
 	countUsers int
 	msgCount   int
 }
 
 func NewMessagesHub(
-	messages *services.MessageService,
+	messages IMessagesService,
 	broker events.BrokerMessagesAdaptor,
 ) *MessagesHub {
 

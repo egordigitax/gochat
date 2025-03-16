@@ -2,7 +2,7 @@ package ws_api
 
 import (
 	"chat-service/internal/api/utils"
-	"chat-service/internal/application/managers"
+	"chat-service/internal/application/services/message"
 	"chat-service/internal/schema/dto"
 	"context"
 	"fmt"
@@ -13,11 +13,11 @@ import (
 // TODO: Use worker pool instead goroutines directly
 // TODO: Move it to Controller struct
 type MessagesWSController struct {
-	hub *managers.MessagesHub
+	hub *message.MessagesHub
 }
 
 func NewMessagesWSController(
-	hub *managers.MessagesHub,
+	hub *message.MessagesHub,
 ) *MessagesWSController {
 	return &MessagesWSController{
 		hub: hub,
@@ -54,7 +54,7 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 		return
 	}
 
-	client := managers.NewMessagesClient(
+	client := message.NewMessagesClient(
 		m.hub,
 		conn,
 		userID,
@@ -68,7 +68,7 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 }
 
 func (m *MessagesWSController) StartClientWrite(
-	client *managers.MessagesClient,
+	client *message.MessagesClient,
 ) {
 
 	defer func() {
@@ -83,7 +83,7 @@ func (m *MessagesWSController) StartClientWrite(
 }
 
 func (m *MessagesWSController) StartClientRead(
-	client *managers.MessagesClient,
+	client *message.MessagesClient,
 ) {
 
 	// TODO: test cancel, and add it to defer if it works fine
