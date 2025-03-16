@@ -2,13 +2,14 @@ package chat
 
 import (
 	"chat-service/internal/application/constants"
-	"chat-service/internal/application/ports"
 	"chat-service/internal/domain/events"
 	"chat-service/internal/schema/dto"
 	"context"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 type ChatsHub struct {
@@ -41,17 +42,16 @@ func (h *ChatsHub) StartPumpChats() {
 		return
 	}
 
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(viper.GetDuration("app.chats_update_rate") * time.Millisecond)
 	chats := make(map[string]struct{})
 
-    log.Println("Chats pump started")
+	log.Println("Chats pump started")
 
 	for {
 
 		select {
 		case msg := <-msgChan:
 			chats[msg.ChatUid] = struct{}{}
-
 		case <-ticker.C:
 			for chat := range chats {
 				userUids, err := h.chats.GetAllUsersFromChatByUid(chat)
@@ -64,6 +64,7 @@ func (h *ChatsHub) StartPumpChats() {
 						client.UpdateChats()
 					}
 				}
+				delete(chats, chat)
 			}
 		}
 	}
@@ -73,6 +74,7 @@ func (h *ChatsHub) RegisterClient(client *ChatsClient) {
 	h.mu.Lock()
 	h.clients[client.UserID] = client
 	h.mu.Unlock()
+
 
 	chats, err := h.chats.GetChatsByUserUid(
 		dto.GetUserChatsByUidPayload{
@@ -92,31 +94,4 @@ func (h *ChatsHub) UnregisterClient(client *ChatsClient) {
 	defer h.mu.Unlock()
 	delete(h.clients, client.UserID)
 	close(client.Send)
-}
-
-type ChatsClient struct {
-	Hub    *ChatsHub
-	Conn   ports.ClientTransport
-	UserID string
-	Send   chan dto.GetUserChatsByUidResponse
-}
-
-func (c *ChatsClient) UpdateChats() {
-	chats, err := c.Hub.chats.GetChatsByUserUid(
-		dto.GetUserChatsByUidPayload{
-			UserUid: c.UserID,
-		})
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	c.Send <- chats
-}
-
-func (c *ChatsClient) WritePump() {
-	for msg := range c.Send {
-		if err := c.Conn.WriteJSON(msg); err != nil {
-			break
-		}
-	}
 }

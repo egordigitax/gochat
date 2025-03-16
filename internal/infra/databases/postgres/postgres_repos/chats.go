@@ -99,16 +99,18 @@ func (m *PGChatsStorage) FetchChatsLastMessages(chats *[]entities.Chat) error {
 	}
 
 	query := `
-    SELECT DISTINCT ON (ucm.chat_uid) 
-        ucm.chat_uid, 
-        ucm.text,
-        ucm.created_at,
-        u.nickname,
-        u.uid
-    FROM users_chats_messages ucm
-    JOIN users u ON ucm.user_uid = u.uid
-    WHERE ucm.chat_uid = ANY($1)
-    ORDER BY ucm.chat_uid, ucm.created_at DESC;
+    SELECT chats.chat_uid, ucm.text, ucm.created_at, u.nickname, u.uid
+    FROM (
+        SELECT DISTINCT chat_uid FROM users_chats_messages WHERE chat_uid = ANY($1)
+    ) AS chats
+    CROSS JOIN LATERAL (
+        SELECT chat_uid, text, created_at, user_uid
+        FROM users_chats_messages 
+        WHERE chat_uid = chats.chat_uid
+        ORDER BY created_at DESC
+        LIMIT 1
+    ) AS ucm
+    JOIN users u ON ucm.user_uid = u.uid;
     `
 
 	rows, err := m.postgresClient.C_RO.Query(query, pq.Array(chatUIDs))
