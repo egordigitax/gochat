@@ -61,7 +61,7 @@ func (m *PGChatsStorage) GetChatByUid(chat_uid string) (entities.Chat, error) {
 	return chat, nil
 }
 
-func (m *PGChatsStorage) GetChatsByUserUid(userUID string, limit, offset int) ([]entities.Chat, error) {
+func (m *PGChatsStorage) GetChatsByUserUid(userUid string, limit, offset int) ([]entities.Chat, error) {
 	var chats []entities.Chat
 
 	query := `
@@ -78,16 +78,15 @@ func (m *PGChatsStorage) GetChatsByUserUid(userUID string, limit, offset int) ([
     LIMIT $2 OFFSET $3;
     `
 
-	err := m.postgresClient.C_RO.Select(&chats, query, userUID, limit, offset)
+	err := m.postgresClient.C_RO.Select(&chats, query, userUid, limit, offset)
 	if err != nil {
-		log.Printf("Error fetching chats for user %s: %v\n", userUID, err)
+		log.Printf("Error fetching chats for user %s: %v\n", userUid, err)
 		return nil, err
 	}
 
 	return chats, nil
 }
 
-// FetchChatsLastMessages retrieves the last messages for given chats.
 func (m *PGChatsStorage) FetchChatsLastMessages(chats *[]entities.Chat) error {
 	if len(*chats) == 0 {
 		return errors.New("chats list is empty")

@@ -11,7 +11,7 @@ type ChatsService interface {
 
 type ChatsStorage interface {
 	GetChatsByUserUid(
-		userUID string,
+		userUid string,
 		limit, offset int,
 	) ([]entities.Chat, error)
 	GetChatByUid(

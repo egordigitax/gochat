@@ -1,6 +1,9 @@
 package entities
 
-import "errors"
+import (
+	"errors"
+	"slices"
+)
 
 type User struct {
 	Uid      string `json:"uid" db:"uid"`
@@ -14,4 +17,15 @@ func (u *User) DeleteMessage(msg Message) error {
 	}
 
 	return nil
+}
+
+func (u User) JoinChat(chat Chat) (ChatUser, error) {
+	if !slices.Contains(chat.UsersUids, u.Uid) {
+		return ChatUser{}, errors.New("No access")
+	}
+
+	return ChatUser{
+		Chat: chat,
+		User: u,
+	}, nil
 }

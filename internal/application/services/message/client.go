@@ -44,9 +44,6 @@ func (c *MessagesClient) GetMessageFromClient(
 	ctx context.Context,
 	msg dto.GetMessageFromClientPayload,
 ) {
-	c.Hub.msgCount++
-	log.Println("sent to users: ", c.Hub.msgCount)
-
 	message := msg.ToEntity()
 
 	err := c.Hub.broker.SendMessageToQueue(
@@ -82,4 +79,9 @@ func (c *MessagesClient) SendMessagesHistory(limit, offset int) {
 	for _, msg := range history {
 		c.Send <- dto.BuildSendMessageToClientPayloadFromEntity(msg)
 	}
+}
+
+func (c *MessagesClient) GetMe() entities.User {
+	// return c.H
+	panic("implement me")
 }

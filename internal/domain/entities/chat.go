@@ -14,6 +14,7 @@ type Chat struct {
 	UpdatedAt   string   `db:"updated_at"`
 	ChatType    ChatType `db:"chat_type"`
 	LastMessage Message  `db:"message"`
+	UsersUids   []string `db:"users_uids"`
 }
 
 type ChatRole int

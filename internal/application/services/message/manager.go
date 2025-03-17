@@ -10,12 +10,10 @@ import (
 )
 
 type MessagesHub struct {
-	broker     events.BrokerMessagesAdaptor
-	clients    map[string]map[string]*MessagesClient
-	messages   IMessagesService
-	mu         sync.RWMutex
-	countUsers int
-	msgCount   int
+	broker   events.BrokerMessagesAdaptor
+	clients  map[string]map[string]*MessagesClient
+	messages IMessagesService
+	mu       sync.RWMutex
 }
 
 func NewMessagesHub(
@@ -35,7 +33,7 @@ func NewMessagesHub(
 func (h *MessagesHub) StartPumpMessages() {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	msgChan, err := h.broker.GetMessagesFromChannel(ctx, constants.SAVED_MESSAGES_CHANNEL)
+	msgChan, err := h.broker.GetMessagesFromChannel(ctx, constants.CHATS_CHANNEL)
 	if err != nil {
 		log.Println(err)
 	}
@@ -61,7 +59,7 @@ func (h *MessagesHub) RegisterClient(client *MessagesClient) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	// h.checkIfUserHasPrevConnectionUnsafe(client)
+	h.checkIfUserHasPrevConnectionUnsafe(client)
 
 	if h.clients[client.ChatUid] == nil {
 		h.clients[client.ChatUid] = make(map[string]*MessagesClient)
@@ -69,7 +67,7 @@ func (h *MessagesHub) RegisterClient(client *MessagesClient) {
 
 	h.clients[client.ChatUid][client.UserUid] = client
 
-	client.SendMessagesHistory(3, 0)
+	client.SendMessagesHistory(10, 0)
 }
 
 func (h *MessagesHub) UnregisterClient(client *MessagesClient) {

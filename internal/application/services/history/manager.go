@@ -62,6 +62,7 @@ func (s *SaveMessagesHub) StartSavingPump() error {
 			}
 
 			toSaveArr = append(toSaveArr, msg)
+            s.broker.SendMessageToChannel(ctx, constants.CHATS_CHANNEL, msg)
 
 		case <-ticker.C:
 
