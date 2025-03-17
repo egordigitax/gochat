@@ -2,18 +2,18 @@ package redis_repos
 
 import (
 	entities "chat-service/internal/domain/entities"
-	"chat-service/internal/infra/memory/redis"
+	"chat-service/internal/infra/memory"
 	"context"
 	"encoding/json"
 	"fmt"
 )
 
 type RedisChatsCache struct {
-	redisClient *redis.RedisClient
+	redisClient *memory.RedisClient
 }
 
 func NewRedisChatsCache(
-	redisClient *redis.RedisClient,
+	redisClient *memory.RedisClient,
 ) *RedisChatsCache {
 	return &RedisChatsCache{
 		redisClient: redisClient,

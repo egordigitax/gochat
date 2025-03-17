@@ -2,20 +2,20 @@ package redis_repos_test
 
 import (
 	"chat-service/internal/domain/entities"
-	"chat-service/internal/infra/memory/redis"
-	"chat-service/internal/infra/memory/redis/redis_repos"
+	"chat-service/internal/infra/memory"
+	"chat-service/internal/infra/memory/redis_repos"
 	"testing"
 )
 
 func TestRedisChatsCache_SetUsersChats(t *testing.T) {
-	redisClient := redis.NewRedisClient()
+	redisClient := memory.NewRedisClient()
 
 	tests := []struct {
-		name        string
-		redisClient *redis.RedisClient
-		user_uid    string
-		chats       []entities.Chat
-		wantErr     bool
+		name string 
+		redisClient *memory.RedisClient
+		user_uid string
+		chats    []entities.Chat
+		wantErr  bool
 	}{
 		{
 			name:        "SetUsersChats",
@@ -47,16 +47,16 @@ func TestRedisChatsCache_SetUsersChats(t *testing.T) {
 }
 
 func TestRedisChatsCache_GetUsersChats(t *testing.T) {
-	redisClient := redis.NewRedisClient()
+	redisClient := memory.NewRedisClient()
 
 	tests := []struct {
-		name        string
-		redisClient *redis.RedisClient
-		user_uid    string
-		limit       int
-		offset      int
-		want        []entities.Chat
-		wantErr     bool
+		name string
+		redisClient *memory.RedisClient
+		user_uid string
+		limit    int
+		offset   int
+		want     []entities.Chat
+		wantErr  bool
 	}{
 		{
 			name:        "GetUsersChats",
@@ -82,7 +82,7 @@ func TestRedisChatsCache_GetUsersChats(t *testing.T) {
 				t.Fatal("GetUsersChats() succeeded unexpectedly")
 			}
 			// TODO: update the condition below to compare got with tt.want.
-			if got[0].Title != tt.want[0].Title {
+            if got[0].Title != tt.want[0].Title {
 				t.Errorf("GetUsersChats() = %v, want %v", got, tt.want)
 			}
 		})
