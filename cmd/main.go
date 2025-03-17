@@ -4,12 +4,12 @@ import (
 	"chat-service/internal/application/chat"
 	"chat-service/internal/application/history"
 	"chat-service/internal/application/message"
-	"chat-service/internal/infra/broker"
-	"chat-service/internal/infra/broker/redis_broker"
+	"chat-service/internal/infra/broker/redis"
+	"chat-service/internal/infra/broker/redis/redis_broker"
 	"chat-service/internal/infra/databases/postgres"
 	"chat-service/internal/infra/databases/postgres/postgres_repos"
-	"chat-service/internal/infra/memory"
-	"chat-service/internal/infra/memory/redis_repos"
+	redis2 "chat-service/internal/infra/memory/redis"
+	redis_repos2 "chat-service/internal/infra/memory/redis/redis_repos"
 	ws_api "chat-service/internal/ports/ws"
 	"chat-service/internal/utils"
 	"fmt"
@@ -51,11 +51,11 @@ func main() {
 
 	viper.AutomaticEnv()
 
-	redisClient := memory.NewRedisClient()
+	redisClient := redis2.NewRedisClient()
 	postgresClient := postgres.NewPostgresClient()
 
-	messagesCache := redis_repos.NewRedisMessagesCache(redisClient)
-	chatsCache := redis_repos.NewRedisChatsCache(redisClient)
+	messagesCache := redis_repos2.NewRedisMessagesCache(redisClient)
+	chatsCache := redis_repos2.NewRedisChatsCache(redisClient)
 
 	messagesStorage := postgres_repos.NewPGMessagesStorage(postgresClient)
 	chatsStorage := postgres_repos.NewPGChatsStorage(postgresClient)
@@ -69,7 +69,7 @@ func main() {
 		chatsCache,
 	)
 
-	broker := broker.NewRedisBroker()
+	broker := redis.NewRedisBroker()
 	messagesBroker := redis_broker.NewRedisMessagesBroker(broker)
 
 	messagesHub := message.NewMessagesHub(
