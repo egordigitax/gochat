@@ -1,7 +1,7 @@
 package message
 
 import (
-	"chat-service/internal/application/constants"
+	"chat-service/internal/application/common/constants"
 	"chat-service/internal/domain/events"
 	"context"
 	"log"

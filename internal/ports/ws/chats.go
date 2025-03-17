@@ -1,9 +1,9 @@
 package ws_api
 
 import (
-	"chat-service/internal/api/utils"
-	"chat-service/internal/application/services/chat"
+	"chat-service/internal/application/chat"
 	"chat-service/internal/schema/dto"
+	"chat-service/internal/utils"
 	"log"
 	"net/http"
 )

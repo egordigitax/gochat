@@ -1,7 +1,7 @@
 package chat
 
 import (
-	"chat-service/internal/application/ports"
+	"chat-service/internal/application/common/ports"
 	"chat-service/internal/schema/dto"
 	"log"
 )

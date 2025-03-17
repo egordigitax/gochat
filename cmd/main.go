@@ -1,17 +1,17 @@
 package main
 
 import (
-	"chat-service/internal/api/utils"
-	"chat-service/internal/api/ws"
-	"chat-service/internal/application/services/chat"
-	"chat-service/internal/application/services/history"
-	"chat-service/internal/application/services/message"
+	"chat-service/internal/application/chat"
+	"chat-service/internal/application/history"
+	"chat-service/internal/application/message"
 	"chat-service/internal/infra/broker"
 	"chat-service/internal/infra/broker/redis_broker"
 	"chat-service/internal/infra/databases/postgres"
 	"chat-service/internal/infra/databases/postgres/postgres_repos"
 	"chat-service/internal/infra/memory"
 	"chat-service/internal/infra/memory/redis_repos"
+	ws_api "chat-service/internal/ports/ws"
+	"chat-service/internal/utils"
 	"fmt"
 	"log"
 	"os"

@@ -1,8 +1,8 @@
 package message
 
 import (
-	"chat-service/internal/application/constants"
-	"chat-service/internal/application/ports"
+	"chat-service/internal/application/common/constants"
+	"chat-service/internal/application/common/ports"
 	"chat-service/internal/domain/entities"
 	"chat-service/internal/schema/dto"
 	"context"

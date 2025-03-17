@@ -1,9 +1,9 @@
 package ws_api
 
 import (
-	"chat-service/internal/api/utils"
-	"chat-service/internal/application/services/message"
+	"chat-service/internal/application/message"
 	"chat-service/internal/schema/dto"
+	"chat-service/internal/utils"
 	"context"
 	"fmt"
 	"log"
@@ -12,6 +12,7 @@ import (
 
 // TODO: Use worker pool instead goroutines directly
 // TODO: Move it to Controller struct
+
 type MessagesWSController struct {
 	hub *message.MessagesHub
 }

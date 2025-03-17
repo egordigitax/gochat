@@ -1,7 +1,7 @@
 package history
 
 import (
-	"chat-service/internal/application/constants"
+	"chat-service/internal/application/common/constants"
 	"chat-service/internal/domain/entities"
 	"chat-service/internal/domain/events"
 	"chat-service/internal/domain/repositories"
@@ -32,13 +32,12 @@ func NewSaveMessagesHub(
 	}
 }
 
-func (s *SaveMessagesHub) StartSavingPump() error {
+func (s *SaveMessagesHub) StartSavingPump() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	msgChan, err := s.broker.GetMessagesFromQueue(ctx, constants.CHATS_QUEUE)
 	if err != nil {
 		cancel()
-		return err
 	}
 
 	ticker := time.NewTicker(
@@ -56,13 +55,9 @@ func (s *SaveMessagesHub) StartSavingPump() error {
 
 	for {
 		select {
-		case msg, ok := <-msgChan:
-			if !ok {
-				return nil
-			}
-
+		case msg := <-msgChan:
 			toSaveArr = append(toSaveArr, msg)
-            s.broker.SendMessageToChannel(ctx, constants.CHATS_CHANNEL, msg)
+			s.broker.SendMessageToChannel(ctx, constants.CHATS_CHANNEL, msg)
 
 		case <-ticker.C:
 

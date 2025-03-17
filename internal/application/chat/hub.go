@@ -1,7 +1,7 @@
 package chat
 
 import (
-	"chat-service/internal/application/constants"
+	"chat-service/internal/application/common/constants"
 	"chat-service/internal/domain/events"
 	"chat-service/internal/schema/dto"
 	"context"
@@ -48,7 +48,6 @@ func (h *ChatsHub) StartPumpChats() {
 	log.Println("Chats pump started")
 
 	for {
-
 		select {
 		case msg := <-msgChan:
 			chats[msg.ChatUid] = struct{}{}
@@ -74,7 +73,6 @@ func (h *ChatsHub) RegisterClient(client *ChatsClient) {
 	h.mu.Lock()
 	h.clients[client.UserID] = client
 	h.mu.Unlock()
-
 
 	chats, err := h.chats.GetChatsByUserUid(
 		dto.GetUserChatsByUidPayload{
