@@ -51,7 +51,7 @@ func (m *ChatsService) GetChatsByUserUid(
 	return response, nil
 }
 
-func (m *ChatsService) GetAllUsersFromChatByUid(chatUid string) ([]string, error) {
+func (m *ChatsService) GetUsersFromChat(chatUid string) ([]string, error) {
 	// get from
 	return m.ChatsStorage.GetAllUsersFromChatByUid(chatUid)
 }

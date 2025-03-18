@@ -9,6 +9,6 @@ type Message struct {
 }
 
 type BaseMessage struct {
-	Type string      `json:"type"`
-	Data interface{} `json:"data"`
+	Action string      `json:"type"`
+	Data   interface{} `json:"data"`
 }

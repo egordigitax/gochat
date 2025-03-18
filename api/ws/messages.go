@@ -1,7 +1,7 @@
 package ws_api
 
 import (
-	messages2 "chat-service/internal/application/use_cases/messages"
+	"chat-service/internal/application/use_cases/messages"
 	"chat-service/internal/schema/dto"
 	"chat-service/internal/utils"
 	"context"
@@ -14,11 +14,11 @@ import (
 // TODO: Move it to Controller struct
 
 type MessagesWSController struct {
-	hub *messages2.MessageHub
+	hub *messages.MessageHub
 }
 
 func NewMessagesWSController(
-	hub *messages2.MessageHub,
+	hub *messages.MessageHub,
 ) *MessagesWSController {
 	return &MessagesWSController{
 		hub: hub,
@@ -55,7 +55,7 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 		return
 	}
 
-	client := messages2.NewMessagesClient(
+	client := messages.NewMessagesClient(
 		m.hub,
 		conn,
 		userID,
@@ -69,7 +69,7 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 }
 
 func (m *MessagesWSController) StartClientWrite(
-	client *messages2.MessageClient,
+	client *messages.MessageClient,
 ) {
 
 	defer func() {
@@ -84,7 +84,7 @@ func (m *MessagesWSController) StartClientWrite(
 }
 
 func (m *MessagesWSController) StartClientRead(
-	client *messages2.MessageClient,
+	client *messages.MessageClient,
 ) {
 
 	// TODO: test cancel, and add it to defer if it works fine

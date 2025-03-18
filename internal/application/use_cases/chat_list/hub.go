@@ -3,7 +3,6 @@ package chat_list
 import (
 	"chat-service/internal/application/common/constants"
 	"chat-service/internal/domain/events"
-	"chat-service/internal/schema/dto"
 	"context"
 	"log"
 	"sync"
@@ -53,7 +52,7 @@ func (h *ChatsHub) StartPumpChats() {
 			chats[msg.ChatUid] = struct{}{}
 		case <-ticker.C:
 			for chat := range chats {
-				userUids, err := h.chats.GetAllUsersFromChatByUid(chat)
+				userUids, err := h.chats.GetUsersFromChat(chat)
 				if err != nil {
 					log.Println(err)
 					continue
@@ -74,17 +73,7 @@ func (h *ChatsHub) RegisterClient(client *ChatsClient) {
 	h.clients[client.UserID] = client
 	h.mu.Unlock()
 
-	chats, err := h.chats.GetChatsByUserUid(
-		dto.GetUserChatsByUidPayload{
-			UserUid: client.UserID,
-		})
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	h.clients[client.UserID].Send <- chats
-
+	client.GetChats()
 }
 
 func (h *ChatsHub) UnregisterClient(client *ChatsClient) {
