@@ -40,7 +40,7 @@ func NewMessagesClient(
 	}
 }
 
-func (c *MessageClient) GetMessageFromClient(
+func (c *MessageClient) SendMessage(
 	ctx context.Context,
 	msg dto.GetMessageFromClientPayload,
 ) {
@@ -52,11 +52,11 @@ func (c *MessageClient) GetMessageFromClient(
 		message,
 	)
 	if err != nil {
-		log.Println(err.Error())
+		log.Println(err)
 	}
 }
 
-func (c *MessageClient) SendMessageToClient(
+func (c *MessageClient) GetMessage(
 	ctx context.Context,
 	msg entities.Message,
 ) error {
@@ -65,7 +65,7 @@ func (c *MessageClient) SendMessageToClient(
 	return nil
 }
 
-func (c *MessageClient) SendMessagesHistory(limit, offset int) {
+func (c *MessageClient) GetMessagesHistory(limit, offset int) {
 	history, err := c.Hub.messages.GetMessagesHistory(c.ChatUid, limit, offset)
 	if err != nil {
 		log.Println("smth wrong:", err)

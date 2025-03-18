@@ -7,3 +7,8 @@ type Message struct {
 	Text      string `json:"text"`
 	CreatedAt string `json:"created_at"`
 }
+
+type BaseMessage struct {
+	Type string      `json:"type"`
+	Data interface{} `json:"data"`
+}

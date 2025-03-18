@@ -13,7 +13,7 @@ type ChatsClient struct {
 	Send   chan dto.GetUserChatsByUidResponse
 }
 
-func (c *ChatsClient) UpdateChats() {
+func (c *ChatsClient) GetChats() {
 	chats, err := c.Hub.chats.GetChatsByUserUid(
 		dto.GetUserChatsByUidPayload{
 			UserUid: c.UserID,

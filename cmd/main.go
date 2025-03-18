@@ -1,6 +1,7 @@
 package main
 
 import (
+	ws_api2 "chat-service/api/ws"
 	"chat-service/internal/application/use_cases/chat_list"
 	"chat-service/internal/application/use_cases/messages"
 	"chat-service/internal/application/use_cases/save_history"
@@ -10,7 +11,6 @@ import (
 	"chat-service/internal/infra/databases/postgres/postgres_repos"
 	"chat-service/internal/infra/memory"
 	"chat-service/internal/infra/memory/redis_repos"
-	ws_api "chat-service/internal/ports/ws"
 	"chat-service/internal/utils"
 	"fmt"
 	"log"
@@ -86,8 +86,8 @@ func main() {
 		messagesStorage,
 	)
 
-	messagesController := ws_api.NewMessagesWSController(messagesHub)
-	chatsController := ws_api.NewChatsWSController(chatsHub)
+	messagesController := ws_api2.NewMessagesWSController(messagesHub)
+	chatsController := ws_api2.NewChatsWSController(chatsHub)
 
 	messagesController.Handle()
 	chatsController.Handle()

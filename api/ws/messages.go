@@ -119,6 +119,6 @@ func (m *MessagesWSController) StartClientRead(
 			continue
 		}
 
-		client.GetMessageFromClient(ctx, msg)
+		client.SendMessage(ctx, msg)
 	}
 }

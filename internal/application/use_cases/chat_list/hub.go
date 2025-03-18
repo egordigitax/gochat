@@ -60,7 +60,7 @@ func (h *ChatsHub) StartPumpChats() {
 				}
 				for _, user := range userUids {
 					if client, ok := h.clients[user]; ok {
-						client.UpdateChats()
+						client.GetChats()
 					}
 				}
 				delete(chats, chat)
