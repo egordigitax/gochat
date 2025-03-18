@@ -11,9 +11,9 @@ type User struct {
 	MediaUrl string `json:"media_url" db:"media_url"`
 }
 
-func (u *User) DeleteMessage(msg Message) error {
+func (u User) DeleteMessage(msg Message) error {
 	if msg.UserUid != u.Uid {
-		return errors.New("Not your message")
+		return errors.New("not your message")
 	}
 
 	return nil
@@ -21,7 +21,7 @@ func (u *User) DeleteMessage(msg Message) error {
 
 func (u User) JoinChat(chat Chat) (ChatUser, error) {
 	if !slices.Contains(chat.UsersUids, u.Uid) {
-		return ChatUser{}, errors.New("No access")
+		return ChatUser{}, errors.New("no access")
 	}
 
 	return ChatUser{

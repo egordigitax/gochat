@@ -3,6 +3,7 @@ package postgres_repos
 import (
 	"chat-service/internal/domain/entities"
 	"chat-service/internal/infra/databases/postgres"
+	"database/sql"
 	"errors"
 	"log"
 
@@ -19,7 +20,7 @@ func NewPGChatsStorage(postgresClient *postgres.PostgresClient) *PGChatsStorage 
 	}
 }
 
-func (m *PGChatsStorage) GetAllUsersFromChatByUid(chat_uid string) ([]string, error) {
+func (m *PGChatsStorage) GetAllUsersFromChatByUid(chatUid string) ([]string, error) {
 	var userUids []string
 
 	query := `
@@ -29,7 +30,7 @@ func (m *PGChatsStorage) GetAllUsersFromChatByUid(chat_uid string) ([]string, er
     WHERE uid = $1
     `
 
-	err := m.postgresClient.C_RO.QueryRow(query, chat_uid).Scan(pq.Array(&userUids))
+	err := m.postgresClient.C_RO.QueryRow(query, chatUid).Scan(pq.Array(&userUids))
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +38,7 @@ func (m *PGChatsStorage) GetAllUsersFromChatByUid(chat_uid string) ([]string, er
 	return userUids, nil
 }
 
-func (m *PGChatsStorage) GetChatByUid(chat_uid string) (entities.Chat, error) {
+func (m *PGChatsStorage) GetChatByUid(chatUid string) (entities.Chat, error) {
 	var chat entities.Chat
 	query := `
     SELECT 
@@ -52,7 +53,7 @@ func (m *PGChatsStorage) GetChatByUid(chat_uid string) (entities.Chat, error) {
     WHERE uc.uid = $1;
     `
 
-	err := m.postgresClient.C_RO.Get(&chat, query, chat_uid)
+	err := m.postgresClient.C_RO.Get(&chat, query, chatUid)
 	if err != nil {
 		log.Println(err)
 		return chat, err
@@ -117,7 +118,13 @@ func (m *PGChatsStorage) FetchChatsLastMessages(chats *[]entities.Chat) error {
 		log.Printf("Error fetching last messages: %v\n", err)
 		return err
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Println("Failed to close rows")
+		}
+	}(rows)
 
 	messages := make(map[string]entities.Message, len(*chats))
 
@@ -145,13 +152,13 @@ func (m *PGChatsStorage) FetchChatsLastMessages(chats *[]entities.Chat) error {
 }
 
 func (m *PGChatsStorage) CheckIfUserHasAccess(
-	user_uid string,
-	chat_uid string,
+	userUid string,
+	chatUid string,
 ) (bool, error) {
 	query := `
     SELECT EXISTS (
         SELECT 1 FROM users_chats 
-        WHERE chat_uid = $1 
+        WHERE uid = $1 
         AND $2 = ANY(users_uids)
     );`
 
@@ -159,8 +166,8 @@ func (m *PGChatsStorage) CheckIfUserHasAccess(
 	err := m.postgresClient.C_RO.Get(
 		&isAccess,
 		query,
-		chat_uid,
-		user_uid,
+		chatUid,
+		userUid,
 	)
 
 	return isAccess, err

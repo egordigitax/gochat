@@ -1,4 +1,4 @@
-package history
+package save_history
 
 import (
 	"chat-service/internal/application/common/constants"
@@ -57,7 +57,10 @@ func (s *SaveMessagesHub) StartSavingPump() {
 		select {
 		case msg := <-msgChan:
 			toSaveArr = append(toSaveArr, msg)
-			s.broker.SendMessageToChannel(ctx, constants.CHATS_CHANNEL, msg)
+			err := s.broker.SendMessageToChannel(ctx, constants.CHATS_CHANNEL, msg)
+			if err != nil {
+				log.Println("Error saving pump:", err)
+			}
 
 		case <-ticker.C:
 

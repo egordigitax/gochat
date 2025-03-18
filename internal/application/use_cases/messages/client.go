@@ -1,4 +1,4 @@
-package message
+package messages
 
 import (
 	"chat-service/internal/application/common/constants"
@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-type MessagesClient struct {
-	Hub     *MessagesHub
+type MessageClient struct {
+	Hub     *MessageHub
 	Conn    ports.ClientTransport
 	UserUid string
 	ChatUid string
@@ -21,17 +21,17 @@ type MessagesClient struct {
 }
 
 func NewMessagesClient(
-	hub *MessagesHub,
+	hub *MessageHub,
 	Conn ports.ClientTransport,
 	UserUid string, ChatUid string,
-) *MessagesClient {
+) *MessageClient {
 
 	sendChan := make(
 		chan dto.SendMessageToClientPayload,
 		viper.GetInt("app.users_msg_buff"),
 	)
 
-	return &MessagesClient{
+	return &MessageClient{
 		Hub:     hub,
 		Conn:    Conn,
 		UserUid: UserUid,
@@ -40,7 +40,7 @@ func NewMessagesClient(
 	}
 }
 
-func (c *MessagesClient) GetMessageFromClient(
+func (c *MessageClient) GetMessageFromClient(
 	ctx context.Context,
 	msg dto.GetMessageFromClientPayload,
 ) {
@@ -56,7 +56,7 @@ func (c *MessagesClient) GetMessageFromClient(
 	}
 }
 
-func (c *MessagesClient) SendMessageToClient(
+func (c *MessageClient) SendMessageToClient(
 	ctx context.Context,
 	msg entities.Message,
 ) error {
@@ -65,7 +65,7 @@ func (c *MessagesClient) SendMessageToClient(
 	return nil
 }
 
-func (c *MessagesClient) SendMessagesHistory(limit, offset int) {
+func (c *MessageClient) SendMessagesHistory(limit, offset int) {
 	history, err := c.Hub.messages.GetMessagesHistory(c.ChatUid, limit, offset)
 	if err != nil {
 		log.Println("smth wrong:", err)
@@ -81,7 +81,7 @@ func (c *MessagesClient) SendMessagesHistory(limit, offset int) {
 	}
 }
 
-func (c *MessagesClient) GetMe() entities.User {
+func (c *MessageClient) GetMe() entities.User {
 	// return c.H
 	panic("implement me")
 }

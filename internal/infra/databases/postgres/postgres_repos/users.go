@@ -20,9 +20,9 @@ func NewPGUsersStorage(
 
 // var _ repositories.UsersStorage = PGUsersStorage{}
 
-func (p PGUsersStorage) GetUserByUid(user_uid string) (entities.User, error) {
+func (p PGUsersStorage) GetUserByUid(userUid string) (entities.User, error) {
 	user := entities.User{
-		Uid:      user_uid,
+		Uid:      userUid,
 		Nickname: "",
 		MediaUrl: "",
 	}
@@ -40,7 +40,7 @@ func (p PGUsersStorage) GetUserByUid(user_uid string) (entities.User, error) {
     LIMIT 1;
     `
 
-	err := p.postgresClient.C_RO.Get(&user, query, user_uid)
+	err := p.postgresClient.C_RO.Get(&user, query, userUid)
 	if err != nil {
 		return user, err
 	}

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"chat-service/internal/application/chat"
-	"chat-service/internal/application/history"
-	"chat-service/internal/application/message"
+	"chat-service/internal/application/use_cases/chat_list"
+	"chat-service/internal/application/use_cases/messages"
+	"chat-service/internal/application/use_cases/save_history"
 	"chat-service/internal/infra/broker"
 	"chat-service/internal/infra/broker/redis_broker"
 	"chat-service/internal/infra/databases/postgres"
@@ -60,27 +60,27 @@ func main() {
 	messagesStorage := postgres_repos.NewPGMessagesStorage(postgresClient)
 	chatsStorage := postgres_repos.NewPGChatsStorage(postgresClient)
 
-	messagesService := message.NewMessageService(
+	messagesService := messages.NewMessageService(
 		messagesStorage,
 		messagesCache,
 	)
-	chatsService := chat.NewChatsService(
+	chatsService := chat_list.NewChatsService(
 		chatsStorage,
 		chatsCache,
 	)
 
-	broker := broker.NewRedisBroker()
-	messagesBroker := redis_broker.NewRedisMessagesBroker(broker)
+	redisBroker := broker.NewRedisBroker()
+	messagesBroker := redis_broker.NewRedisMessagesBroker(redisBroker)
 
-	messagesHub := message.NewMessagesHub(
+	messagesHub := messages.NewMessagesHub(
 		messagesService,
 		messagesBroker,
 	)
-	chatsHub := chat.NewChatsHub(
+	chatsHub := chat_list.NewChatsHub(
 		chatsService,
 		messagesBroker,
 	)
-	savingHub := history.NewSaveMessagesHub(
+	savingHub := save_history.NewSaveMessagesHub(
 		messagesBroker,
 		messagesCache,
 		messagesStorage,

@@ -1,4 +1,4 @@
-package chat
+package chat_list
 
 import (
 	"chat-service/internal/application/common/constants"

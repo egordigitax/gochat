@@ -1,4 +1,4 @@
-package chat
+package chat_list
 
 import (
 	"chat-service/internal/domain/repositories"
@@ -21,8 +21,8 @@ func NewChatsService(
 	}
 }
 
-func (m *ChatsService) CheckIfUserHasAccess(user_uid string, chat_uid string) (bool, error) {
-	return m.ChatsStorage.CheckIfUserHasAccess(user_uid, chat_uid)
+func (m *ChatsService) CheckIfUserHasAccess(userUid string, chatUid string) (bool, error) {
+	return m.ChatsStorage.CheckIfUserHasAccess(userUid, chatUid)
 }
 
 func (m *ChatsService) GetChatsByUserUid(
@@ -51,9 +51,9 @@ func (m *ChatsService) GetChatsByUserUid(
 	return response, nil
 }
 
-func (m *ChatsService) GetAllUsersFromChatByUid(chat_uid string) ([]string, error) {
+func (m *ChatsService) GetAllUsersFromChatByUid(chatUid string) ([]string, error) {
 	// get from
-	return m.ChatsStorage.GetAllUsersFromChatByUid(chat_uid)
+	return m.ChatsStorage.GetAllUsersFromChatByUid(chatUid)
 }
 
 func (m *ChatsService) CreateNewChat(
@@ -62,4 +62,5 @@ func (m *ChatsService) CreateNewChat(
 	media_url string,
 	users_uids []string,
 ) {
+	panic("implement me")
 }

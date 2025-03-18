@@ -1,7 +1,7 @@
 package ws_api
 
 import (
-	"chat-service/internal/application/message"
+	messages2 "chat-service/internal/application/use_cases/messages"
 	"chat-service/internal/schema/dto"
 	"chat-service/internal/utils"
 	"context"
@@ -14,11 +14,11 @@ import (
 // TODO: Move it to Controller struct
 
 type MessagesWSController struct {
-	hub *message.MessagesHub
+	hub *messages2.MessageHub
 }
 
 func NewMessagesWSController(
-	hub *message.MessagesHub,
+	hub *messages2.MessageHub,
 ) *MessagesWSController {
 	return &MessagesWSController{
 		hub: hub,
@@ -55,7 +55,7 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 		return
 	}
 
-	client := message.NewMessagesClient(
+	client := messages2.NewMessagesClient(
 		m.hub,
 		conn,
 		userID,
@@ -69,7 +69,7 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 }
 
 func (m *MessagesWSController) StartClientWrite(
-	client *message.MessagesClient,
+	client *messages2.MessageClient,
 ) {
 
 	defer func() {
@@ -84,7 +84,7 @@ func (m *MessagesWSController) StartClientWrite(
 }
 
 func (m *MessagesWSController) StartClientRead(
-	client *message.MessagesClient,
+	client *messages2.MessageClient,
 ) {
 
 	// TODO: test cancel, and add it to defer if it works fine
@@ -111,7 +111,11 @@ func (m *MessagesWSController) StartClientRead(
 
 		err = msg.Validate()
 		if err != nil {
-			client.Conn.WriteJSON(fmt.Sprintf("Error: %s", err.Error()))
+			continue
+		}
+
+		err = client.Conn.WriteJSON(fmt.Sprintf("Error: %s", err))
+		if err != nil {
 			continue
 		}
 

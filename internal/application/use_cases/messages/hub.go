@@ -1,4 +1,4 @@
-package message
+package messages
 
 import (
 	"chat-service/internal/application/common/constants"
@@ -9,28 +9,28 @@ import (
 	"sync"
 )
 
-type MessagesHub struct {
+type MessageHub struct {
 	broker   events.BrokerMessagesAdaptor
-	clients  map[string]map[string]*MessagesClient
-	messages IMessagesService
+	clients  map[string]map[string]*MessageClient
+	messages IMessageService
 	mu       sync.RWMutex
 }
 
 func NewMessagesHub(
-	messages IMessagesService,
+	messages IMessageService,
 	broker events.BrokerMessagesAdaptor,
-) *MessagesHub {
+) *MessageHub {
 
-	hub := &MessagesHub{
+	hub := &MessageHub{
 		broker:   broker,
 		messages: messages,
-		clients:  make(map[string]map[string]*MessagesClient),
+		clients:  make(map[string]map[string]*MessageClient),
 	}
 
 	return hub
 }
 
-func (h *MessagesHub) StartPumpMessages() {
+func (h *MessageHub) StartPumpMessages() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	msgChan, err := h.broker.GetMessagesFromChannel(ctx, constants.CHATS_CHANNEL)
@@ -49,20 +49,23 @@ func (h *MessagesHub) StartPumpMessages() {
 		h.mu.RLock()
 		clients := h.clients[msg.ChatUid]
 		for _, user := range clients {
-			user.SendMessageToClient(ctx, msg)
+			err := user.SendMessageToClient(ctx, msg)
+			if err != nil {
+				log.Println(err)
+			}
 		}
 		h.mu.RUnlock()
 	}
 }
 
-func (h *MessagesHub) RegisterClient(client *MessagesClient) {
+func (h *MessageHub) RegisterClient(client *MessageClient) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
 	h.checkIfUserHasPrevConnectionUnsafe(client)
 
 	if h.clients[client.ChatUid] == nil {
-		h.clients[client.ChatUid] = make(map[string]*MessagesClient)
+		h.clients[client.ChatUid] = make(map[string]*MessageClient)
 	}
 
 	h.clients[client.ChatUid][client.UserUid] = client
@@ -70,7 +73,7 @@ func (h *MessagesHub) RegisterClient(client *MessagesClient) {
 	client.SendMessagesHistory(10, 0)
 }
 
-func (h *MessagesHub) UnregisterClient(client *MessagesClient) {
+func (h *MessageHub) UnregisterClient(client *MessageClient) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.unregisterClientUnsafe(client)
@@ -78,18 +81,18 @@ func (h *MessagesHub) UnregisterClient(client *MessagesClient) {
 
 // Unsafe methonds should be called only with Mutex Lock
 
-func (h *MessagesHub) isUserExistUnsafe(client *MessagesClient) (*MessagesClient, bool) {
+func (h *MessageHub) isUserExistUnsafe(client *MessageClient) (*MessageClient, bool) {
 	client, ok := h.clients[client.ChatUid][client.UserUid]
 	return client, ok
 }
 
-func (h *MessagesHub) checkIfUserHasPrevConnectionUnsafe(client *MessagesClient) {
+func (h *MessageHub) checkIfUserHasPrevConnectionUnsafe(client *MessageClient) {
 	if oldClient, ok := h.isUserExistUnsafe(client); ok {
 		h.unregisterClientUnsafe(oldClient)
 	}
 }
 
-func (h *MessagesHub) unregisterClientUnsafe(client *MessagesClient) {
+func (h *MessageHub) unregisterClientUnsafe(client *MessageClient) {
 	oldClient, ok := h.isUserExistUnsafe(client)
 	if !ok || oldClient != client {
 		return

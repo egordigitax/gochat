@@ -1,8 +1,8 @@
-package message
+package messages
 
 import "chat-service/internal/domain/entities"
 
-type IMessagesService interface {
+type IMessageService interface {
 	GetMessagesHistory(chatUID string, limit, offset int) ([]entities.Message, error)
 	SaveMessagesBulk(msgs ...entities.Message) error
 }

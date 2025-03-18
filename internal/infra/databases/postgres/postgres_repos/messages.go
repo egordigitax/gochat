@@ -29,8 +29,8 @@ func (m PGMessagesStorage) SaveMessagesBulk(msgs ...entities.Message) error {
     VALUES 
     `
 
-	args := []interface{}{}
-	values := []string{}
+	var args []interface{}
+	var values []string
 
 	for i, msg := range msgs {
 		values = append(values, fmt.Sprintf("($%d, $%d, $%d)", i*3+1, i*3+2, i*3+3))
@@ -44,7 +44,7 @@ func (m PGMessagesStorage) SaveMessagesBulk(msgs ...entities.Message) error {
 }
 
 func (m PGMessagesStorage) GetMessages(
-	chat_uid string,
+	chatUid string,
 	limit int, offset int,
 ) ([]entities.Message, error) {
 	var messages []entities.Message
@@ -65,9 +65,9 @@ func (m PGMessagesStorage) GetMessages(
 	err := m.postgresClient.C_RO.Select(
 		&messages,
 		query,
-		chat_uid,
+		chatUid,
 		limit,
-        offset,
+		offset,
 	)
 	if err != nil {
 		return nil, err

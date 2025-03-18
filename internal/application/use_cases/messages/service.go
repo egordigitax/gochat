@@ -1,4 +1,4 @@
-package message
+package messages
 
 import (
 	"chat-service/internal/domain/entities"
@@ -64,6 +64,6 @@ func (m *MessageService) GetMessagesHistory(chatUID string, limit, offset int) (
 	}
 }
 
-func (m MessageService) SaveMessagesBulk(msgs ...entities.Message) error {
+func (m *MessageService) SaveMessagesBulk(msgs ...entities.Message) error {
 	return m.MessagesStorage.SaveMessagesBulk(msgs...)
 }
