@@ -41,9 +41,9 @@ func main() {
 		log.Println("Load ENV from OS")
 	}
 
-	viper.SetConfigName("config")
+	viper.SetConfigName("config.prod")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./configs")
+	viper.AddConfigPath("./config")
 
 	if err := viper.ReadInConfig(); err != nil {
 		panic(err)
