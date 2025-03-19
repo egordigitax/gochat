@@ -1,9 +1,8 @@
 package chat_list
 
 import (
+	"chat-service/internal/application/schema/resources"
 	"chat-service/internal/domain/repositories"
-	"chat-service/internal/schema/dto"
-	"chat-service/internal/schema/resources"
 )
 
 type ChatsService struct {
@@ -26,12 +25,12 @@ func (m *ChatsService) CheckIfUserHasAccess(userUid string, chatUid string) (boo
 }
 
 func (m *ChatsService) GetChatsByUserUid(
-	payload dto.GetUserChatsByUidPayload,
-) (dto.GetUserChatsByUidResponse, error) {
+	userUid string,
+) ([]resources.Chat, error) {
 
-	response := dto.GetUserChatsByUidResponse{}
+	var response []resources.Chat
 
-	chats, err := m.ChatsStorage.GetChatsByUserUid(payload.UserUid, 10, 0)
+	chats, err := m.ChatsStorage.GetChatsByUserUid(userUid, 10, 0)
 	if err != nil {
 		return response, err
 	}
@@ -41,18 +40,16 @@ func (m *ChatsService) GetChatsByUserUid(
 		return response, err
 	}
 
-	response.Items = make([]resources.Chat, len(chats))
+	response = make([]resources.Chat, len(chats))
 
 	for i, item := range chats {
-		response.Items[i] = resources.Chat{}
-		response.Items[i].FromEnitity(&item)
+		response[i] = resources.NewChatFromEntity(item)
 	}
 
 	return response, nil
 }
 
 func (m *ChatsService) GetUsersFromChat(chatUid string) ([]string, error) {
-	// get from
 	return m.ChatsStorage.GetAllUsersFromChatByUid(chatUid)
 }
 

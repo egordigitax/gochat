@@ -3,8 +3,9 @@ package messages
 import (
 	"chat-service/internal/application/common/constants"
 	"chat-service/internal/application/common/ports"
+	"chat-service/internal/application/schema/dto"
+	"chat-service/internal/application/schema/resources"
 	"chat-service/internal/domain/entities"
-	"chat-service/internal/schema/dto"
 	"context"
 	"log"
 	"slices"
@@ -17,7 +18,7 @@ type MessageClient struct {
 	Conn    ports.ClientTransport
 	UserUid string
 	ChatUid string
-	Send    chan dto.SendMessageToClientPayload
+	Send    chan resources.BaseMessage
 }
 
 func NewMessagesClient(
@@ -27,7 +28,7 @@ func NewMessagesClient(
 ) *MessageClient {
 
 	sendChan := make(
-		chan dto.SendMessageToClientPayload,
+		chan resources.BaseMessage,
 		viper.GetInt("app.users_msg_buff"),
 	)
 
@@ -42,9 +43,14 @@ func NewMessagesClient(
 
 func (c *MessageClient) SendMessage(
 	ctx context.Context,
-	msg dto.GetMessageFromClientPayload,
+	msg dto.SendMessagePayload,
 ) {
-	message := msg.ToEntity()
+
+	message := entities.NewMessage(
+		msg.Text,
+		msg.AuthorUid,
+		msg.ChatUid,
+	)
 
 	err := c.Hub.broker.SendMessageToQueue(
 		ctx,
@@ -57,10 +63,20 @@ func (c *MessageClient) SendMessage(
 }
 
 func (c *MessageClient) GetMessage(
-	ctx context.Context,
-	msg entities.Message,
+	msg resources.Message,
 ) error {
-	c.Send <- dto.BuildSendMessageToClientPayloadFromEntity(msg)
+
+	data := dto.GetMessagePayload{
+		AuthorUid: msg.AuthorUid,
+		ChatUid:   msg.ChatUid,
+		Text:      msg.Text,
+		CreatedAt: msg.CreatedAt,
+	}
+
+	c.Send <- resources.BaseMessage{
+		Action: data.GetActionType(),
+		Data:   data,
+	}
 
 	return nil
 }
@@ -77,11 +93,21 @@ func (c *MessageClient) GetMessagesHistory(limit, offset int) {
 	slices.Reverse(history)
 
 	for _, msg := range history {
-		c.Send <- dto.BuildSendMessageToClientPayloadFromEntity(msg)
+		data := dto.GetMessagePayload{
+			AuthorUid: msg.UserUid,
+			ChatUid:   msg.ChatUid,
+			Text:      msg.Text,
+			CreatedAt: msg.CreatedAt,
+		}
+
+		c.Send <- resources.BaseMessage{
+			Action: data.GetActionType(),
+			Data:   data,
+		}
 	}
 }
 
-func (c *MessageClient) GetMe() entities.User {
+func (c *MessageClient) GetMe() resources.User {
 	// return c.H
 	panic("implement me")
 }

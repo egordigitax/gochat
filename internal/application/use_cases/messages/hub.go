@@ -2,6 +2,7 @@ package messages
 
 import (
 	"chat-service/internal/application/common/constants"
+	"chat-service/internal/application/schema/resources"
 	"chat-service/internal/domain/events"
 	"context"
 	"log"
@@ -49,7 +50,13 @@ func (h *MessageHub) StartPumpMessages() {
 		h.mu.RLock()
 		clients := h.clients[msg.ChatUid]
 		for _, user := range clients {
-			err := user.GetMessage(ctx, msg)
+			err := user.GetMessage(resources.Message{
+				Username:  msg.UserInfo.Nickname,
+				AuthorUid: msg.UserUid,
+				ChatUid:   msg.ChatUid,
+				Text:      msg.Text,
+				CreatedAt: msg.CreatedAt,
+			})
 			if err != nil {
 				log.Println(err)
 			}

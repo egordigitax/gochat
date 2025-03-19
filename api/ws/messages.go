@@ -1,13 +1,14 @@
 package ws_api
 
 import (
+	"chat-service/internal/application/schema/dto"
 	"chat-service/internal/application/use_cases/messages"
-	"chat-service/internal/schema/dto"
 	"chat-service/internal/utils"
 	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 )
 
 // TODO: Use worker pool instead goroutines directly
@@ -77,7 +78,16 @@ func (m *MessagesWSController) StartClientWrite(
 	}()
 
 	for msg := range client.Send {
-		if err := client.Conn.WriteJSON(msg); err != nil {
+		data, _ := msg.Data.(dto.GetMessagePayload)
+
+		message := SendMessageToClientPayload{
+			Text:      data.Text,
+			AuthorId:  data.AuthorUid,
+			Nickname:  "implement me",
+			CreatedAt: data.CreatedAt,
+		}
+
+		if err := client.Conn.WriteJSON(message); err != nil {
 			break
 		}
 	}
@@ -97,28 +107,22 @@ func (m *MessagesWSController) StartClientRead(
 	}()
 
 	for {
-		var msg dto.GetMessageFromClientPayload
+		var msg GetMessageFromClientPayload
 		err := client.Conn.ReadJSON(&msg)
 		if err != nil {
-			// log.Println("[ERROR] WebSocket Read:", err)
-			break
+			err = client.Conn.WriteJSON(fmt.Sprintf("Error: %s", err))
+			if err != nil {
+				break
+			}
 		}
-
-		msg.Msg.AuthorUid = client.UserUid
-		msg.Msg.ChatUid = client.ChatUid
 
 		// TODO: Handle different action types from user
 
-		err = msg.Validate()
-		if err != nil {
-			continue
-		}
-
-		err = client.Conn.WriteJSON(fmt.Sprintf("Error: %s", err))
-		if err != nil {
-			continue
-		}
-
-		client.SendMessage(ctx, msg)
+		client.SendMessage(ctx, dto.SendMessagePayload{
+			ChatUid:   client.ChatUid,
+			AuthorUid: client.UserUid,
+			CreatedAt: time.Now().String(),
+			Text:      msg.Text,
+		})
 	}
 }
