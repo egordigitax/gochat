@@ -78,6 +78,8 @@ func (m *MessagesWSController) StartClientWrite(
 	}()
 
 	for msg := range client.Send {
+
+		// handle different actions and parse to schema
 		data, _ := msg.Data.(dto.GetMessagePayload)
 
 		message := SendMessageToClientPayload{
@@ -107,6 +109,8 @@ func (m *MessagesWSController) StartClientRead(
 	}()
 
 	for {
+
+		// handle different actions and parse to schema
 		var msg GetMessageFromClientPayload
 		err := client.Conn.ReadJSON(&msg)
 		if err != nil {

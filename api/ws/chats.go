@@ -1,7 +1,8 @@
 package ws_api
 
 import (
-	chat_list "chat-service/internal/application/use_cases/chat_list"
+	"chat-service/internal/application/schema/dto"
+	"chat-service/internal/application/use_cases/chat_list"
 	"chat-service/internal/utils"
 	"log"
 	"net/http"
@@ -55,7 +56,9 @@ func (c *ChatsWSController) StartClientWrite(client *chat_list.ChatsClient) {
 	}()
 
 	for msg := range client.Send {
-		if err := client.Conn.WriteJSON(msg); err != nil {
+		// handle different actions and parse to schema
+		message := msg.Data.(dto.GetUserChatsPayload)
+		if err := client.Conn.WriteJSON(message); err != nil {
 			break
 		}
 	}
