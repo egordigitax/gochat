@@ -99,9 +99,6 @@ func (m *MessagesWSController) StartClientWrite(
 func (m *MessagesWSController) StartClientRead(
 	client *messages.MessageClient,
 ) {
-
-	// TODO: test cancel, and add it to defer if it works fine
-
 	ctx, cancel := context.WithCancel(context.Background())
 
 	defer func() {
@@ -110,8 +107,6 @@ func (m *MessagesWSController) StartClientRead(
 	}()
 
 	for {
-
-		// handle different actions and parse to schema
 		var root RootMessage
 		err := client.Conn.ReadJSON(&root)
 		if err != nil {
@@ -123,22 +118,30 @@ func (m *MessagesWSController) StartClientRead(
 
 		switch root.ActionType {
 		case ActionType(resources.SEND_MESSAGE):
-			var msg GetMessageFromClientRequest
-			if err := json.Unmarshal(root.RawPayload, &msg); err != nil {
-				log.Println("Failed to unmarshal GetMessageFromClientRequest:", err)
-				return
-			}
-			// Handle msg
-			client.SendMessage(ctx, dto.SendMessagePayload{
-				ChatUid:   client.ChatUid,
-				AuthorUid: client.UserUid,
-				CreatedAt: time.Now().String(),
-				Text:      msg.Text,
-			})
+			m.HandleSendMessageAction(ctx, root.RawPayload, client)
 		default:
 			log.Println("Unknown action type:", root.ActionType)
 		}
-
-		// TODO: Handle different action types from user
 	}
+}
+
+func (m *MessagesWSController) HandleSendMessageAction(
+	ctx context.Context,
+	data interface{},
+	client *messages.MessageClient,
+) error {
+	var msg GetMessageFromClientRequest
+	if err := json.Unmarshal(data.(json.RawMessage), &msg); err != nil {
+		log.Println("Failed to unmarshal GetMessageFromClientRequest:", err)
+		return err
+	}
+
+	client.SendMessage(ctx, dto.SendMessagePayload{
+		ChatUid:   client.ChatUid,
+		AuthorUid: client.UserUid,
+		CreatedAt: time.Now().String(),
+		Text:      msg.Text,
+	})
+
+	return nil
 }

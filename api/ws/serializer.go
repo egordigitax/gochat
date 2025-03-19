@@ -65,8 +65,3 @@ func Serialize(action resources.Action) (json.RawMessage, error) {
 
 	return nil, nil
 }
-
-
-func Deserialize(data []byte) (resources.Action, error) {
-	panic("unimplemented")
-}
