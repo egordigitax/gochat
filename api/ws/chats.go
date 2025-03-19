@@ -1,10 +1,8 @@
 package ws_api
 
 import (
-	"chat-service/internal/application/schema/dto"
 	"chat-service/internal/application/use_cases/chat_list"
 	"chat-service/internal/utils"
-	"encoding/json"
 	"log"
 	"net/http"
 )
@@ -36,7 +34,7 @@ func (c *ChatsWSController) ServeChatsWebSocket(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	upgrader := GetUpgrader()
+	upgrader := utils.GetUpgrader()
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -57,39 +55,11 @@ func (c *ChatsWSController) StartClientWrite(client *chat_list.ChatsClient) {
 	}()
 
 	for msg := range client.Send {
-		// handle different actions and parse to schema
-		message, ok := msg.Data.(dto.RequestUserChatsPayload)
-		if !ok {
-			log.Println("[ERROR] wrong type of data")
-			continue
-		}
-
-		items := make([]Chat, len(message.Items))
-		for i, item := range message.Items {
-			items[i] = Chat{
-				Title:       item.Title,
-				UnreadCount: item.UnreadCount,
-				LastMessage: item.LastMessage.Text,
-				LastAuthor:  item.LastMessage.AuthorUid,
-				MediaUrl:    item.MediaUrl,
-			}
-		}
-
-		data := GetChatsResponse{
-			Items: items,
-		}
-
-		payload, err := json.Marshal(data)
+		json, err := Serialize(msg)
 		if err != nil {
-			log.Println("[ERROR] wrong type of data")
+			log.Println(err)
 		}
-
-		response := RootMessage{
-			ActionType: ActionType(message.GetActionType()),
-			RawPayload: payload,
-		}
-
-		if err := client.Conn.WriteJSON(response); err != nil {
+		if err := client.Conn.WriteJSON(json); err != nil {
 			break
 		}
 	}

@@ -13,6 +13,11 @@ import (
 	"time"
 )
 
+type Serializer interface {
+	Serialize(action resources.Action) ([]byte, error)
+	Deserialize(data []byte) (resources.Action, error)
+}
+
 // TODO: Use worker pool instead goroutines directly
 // TODO: Move it to Controller struct
 
@@ -50,7 +55,7 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 		return
 	}
 
-	upgrader := GetUpgrader()
+	upgrader := utils.GetUpgrader()
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -80,31 +85,13 @@ func (m *MessagesWSController) StartClientWrite(
 	}()
 
 	for msg := range client.Send {
-        log.Println(msg.Data)
-		if msg.Action == resources.REQUEST_MESSAGE {
-			actionData, _ := msg.Data.(dto.RequestMessagePayload)
-            
-            log.Println(actionData.Text)
-			data := SendMessageToClientResponse{
-				Text:      actionData.Text,
-				AuthorId:  actionData.AuthorUid,
-				Nickname:  "implement me",
-				CreatedAt: actionData.CreatedAt,
-			}
-
-			payload, err := json.Marshal(data)
-			if err != nil {
-				log.Println(err)
-			}
-
-			response := RootMessage{
-				ActionType: ActionType(resources.REQUEST_MESSAGE),
-				RawPayload: payload,
-			}
-
-			if err := client.Conn.WriteJSON(response); err != nil {
-				break
-			}
+		response, err := Serialize(msg)
+		if err != nil {
+			log.Println(err)
+		}
+		err = client.Conn.WriteJSON(response)
+		if err != nil {
+			break
 		}
 	}
 }
@@ -148,23 +135,6 @@ func (m *MessagesWSController) StartClientRead(
 				CreatedAt: time.Now().String(),
 				Text:      msg.Text,
 			})
-
-		case "send_message_to_client":
-			var msg SendMessageToClientResponse
-			if err := json.Unmarshal(root.RawPayload, &msg); err != nil {
-				log.Println("Failed to unmarshal SendMessageToClientResponse:", err)
-				return
-			}
-			// Handle msg
-
-		case "get_chats":
-			var msg GetChatsResponse
-			if err := json.Unmarshal(root.RawPayload, &msg); err != nil {
-				log.Println("Failed to unmarshal GetChatsResponse:", err)
-				return
-			}
-			// Handle msg
-
 		default:
 			log.Println("Unknown action type:", root.ActionType)
 		}

@@ -2,6 +2,7 @@ package main
 
 import (
 	ws_api2 "chat-service/api/ws"
+	"chat-service/api/ws_fb"
 	"chat-service/internal/application/use_cases/chat_list"
 	"chat-service/internal/application/use_cases/messages"
 	"chat-service/internal/application/use_cases/save_history"
@@ -88,9 +89,11 @@ func main() {
 
 	messagesController := ws_api2.NewMessagesWSController(messagesHub)
 	chatsController := ws_api2.NewChatsWSController(chatsHub)
+	fbChatsController := ws_fb.NewChatsWSController(chatsHub)
 
 	messagesController.Handle()
 	chatsController.Handle()
+	fbChatsController.Handle()
 
 	go chatsHub.StartPumpChats()
 	go messagesHub.StartPumpMessages()
