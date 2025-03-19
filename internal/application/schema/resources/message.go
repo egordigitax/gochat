@@ -8,9 +8,20 @@ type Message struct {
 	CreatedAt string `json:"created_at"`
 }
 
-type BaseMessage struct {
+type Action struct {
 	Action ActionType  `json:"type"`
 	Data   interface{} `json:"data"`
+}
+
+type IAction interface {
+	GetActionType() ActionType
+}
+
+func BuildAction(action IAction) Action {
+	return Action{
+		Action: action.GetActionType(),
+		Data:   action,
+	}
 }
 
 type ActionType string

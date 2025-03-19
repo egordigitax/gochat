@@ -12,12 +12,12 @@ type ChatsClient struct {
 	Hub    *ChatsHub
 	Conn   ports.ClientTransport
 	UserId string
-	Send   chan resources.BaseMessage
+	Send   chan resources.Action
 }
 
 func NewChatsClient(hub *ChatsHub, conn ports.ClientTransport, userId string) *ChatsClient {
 	sendChan := make(
-		chan resources.BaseMessage,
+		chan resources.Action,
 		viper.GetInt("app.users_msg_buff"),
 	)
 
@@ -40,8 +40,5 @@ func (c *ChatsClient) GetChats() {
 		Items: chats,
 	}
 
-	c.Send <- resources.BaseMessage{
-		Action: data.GetActionType(),
-		Data:   data,
-	}
+	c.Send <- resources.BuildAction(data)
 }

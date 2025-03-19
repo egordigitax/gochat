@@ -18,7 +18,7 @@ type MessageClient struct {
 	Conn    ports.ClientTransport
 	UserUid string
 	ChatUid string
-	Send    chan resources.BaseMessage
+	Send    chan resources.Action
 }
 
 func NewMessagesClient(
@@ -28,7 +28,7 @@ func NewMessagesClient(
 ) *MessageClient {
 
 	sendChan := make(
-		chan resources.BaseMessage,
+		chan resources.Action,
 		viper.GetInt("app.users_msg_buff"),
 	)
 
@@ -73,10 +73,7 @@ func (c *MessageClient) GetMessage(
 		CreatedAt: msg.CreatedAt,
 	}
 
-	c.Send <- resources.BaseMessage{
-		Action: data.GetActionType(),
-		Data:   data,
-	}
+	c.Send <- resources.BuildAction(data)
 
 	return nil
 }
@@ -100,10 +97,7 @@ func (c *MessageClient) GetMessagesHistory(limit, offset int) {
 			CreatedAt: msg.CreatedAt,
 		}
 
-		c.Send <- resources.BaseMessage{
-			Action: data.GetActionType(),
-			Data:   data,
-		}
+		c.Send <- resources.BuildAction(data)
 	}
 }
 
