@@ -1,18 +1,23 @@
 package ws_api
 
+import "encoding/json"
+
 type ActionType string
 
+type RootMessage struct {
+	ActionType ActionType      `json:"action_type"`
+	RawPayload json.RawMessage `json:"payload"`
+}
+
 type GetMessageFromClientRequest struct {
-	ActionType ActionType `json:"action_type"`
-	Text       string     `json:"text"`
+	Text string `json:"text"`
 }
 
 type SendMessageToClientResponse struct {
-	ActionType ActionType `json:"action_type"`
-	Text       string     `json:"text"`
-	AuthorId   string     `json:"author_id"`
-	Nickname   string     `json:"nickname"`
-	CreatedAt  string     `json:"created_at"`
+	Text      string `json:"text"`
+	AuthorId  string `json:"author_id"`
+	Nickname  string `json:"nickname"`
+	CreatedAt string `json:"created_at"`
 }
 
 type Chat struct {
@@ -24,6 +29,5 @@ type Chat struct {
 }
 
 type GetChatsResponse struct {
-	ActionType ActionType `json:"action_type"`
-	Items      []Chat     `json:"items"`
+	Items []Chat `json:"items"`
 }

@@ -2,9 +2,11 @@ package ws_api
 
 import (
 	"chat-service/internal/application/schema/dto"
+	"chat-service/internal/application/schema/resources"
 	"chat-service/internal/application/use_cases/messages"
 	"chat-service/internal/utils"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -79,19 +81,31 @@ func (m *MessagesWSController) StartClientWrite(
 
 	for msg := range client.Send {
 
-		// handle different actions and parse to schema
-		data, _ := msg.Data.(dto.GetMessagePayload)
+		log.Print(msg.Action)
 
-		message := SendMessageToClientResponse{
-			ActionType: ActionType("get_message"),
-			Text:       data.Text,
-			AuthorId:   data.AuthorUid,
-			Nickname:   "implement me",
-			CreatedAt:  data.CreatedAt,
-		}
+		if msg.Action == resources.REQUEST_MESSAGE {
+			actionData, _ := msg.Data.(dto.RequestMessagePayload)
 
-		if err := client.Conn.WriteJSON(message); err != nil {
-			break
+			data := SendMessageToClientResponse{
+				Text:      actionData.Text,
+				AuthorId:  actionData.AuthorUid,
+				Nickname:  "implement me",
+				CreatedAt: actionData.CreatedAt,
+			}
+
+			payload, err := json.Marshal(data)
+			if err != nil {
+				log.Println(err)
+			}
+
+			response := RootMessage{
+				ActionType: ActionType(resources.REQUEST_MESSAGE),
+				RawPayload: payload,
+			}
+
+			if err := client.Conn.WriteJSON(response); err != nil {
+				break
+			}
 		}
 	}
 }
@@ -112,8 +126,8 @@ func (m *MessagesWSController) StartClientRead(
 	for {
 
 		// handle different actions and parse to schema
-		var msg GetMessageFromClientRequest
-		err := client.Conn.ReadJSON(&msg)
+		var root RootMessage
+		err := client.Conn.ReadJSON(&root)
 		if err != nil {
 			err = client.Conn.WriteJSON(fmt.Sprintf("Error: %s", err))
 			if err != nil {
@@ -121,13 +135,41 @@ func (m *MessagesWSController) StartClientRead(
 			}
 		}
 
-		// TODO: Handle different action types from user
+		switch root.ActionType {
+		case ActionType(resources.SEND_MESSAGE):
+			var msg GetMessageFromClientRequest
+			if err := json.Unmarshal(root.RawPayload, &msg); err != nil {
+				log.Println("Failed to unmarshal GetMessageFromClientRequest:", err)
+				return
+			}
+			// Handle msg
+			client.SendMessage(ctx, dto.SendMessagePayload{
+				ChatUid:   client.ChatUid,
+				AuthorUid: client.UserUid,
+				CreatedAt: time.Now().String(),
+				Text:      msg.Text,
+			})
 
-		client.SendMessage(ctx, dto.SendMessagePayload{
-			ChatUid:   client.ChatUid,
-			AuthorUid: client.UserUid,
-			CreatedAt: time.Now().String(),
-			Text:      msg.Text,
-		})
+		case "send_message_to_client":
+			var msg SendMessageToClientResponse
+			if err := json.Unmarshal(root.RawPayload, &msg); err != nil {
+				log.Println("Failed to unmarshal SendMessageToClientResponse:", err)
+				return
+			}
+			// Handle msg
+
+		case "get_chats":
+			var msg GetChatsResponse
+			if err := json.Unmarshal(root.RawPayload, &msg); err != nil {
+				log.Println("Failed to unmarshal GetChatsResponse:", err)
+				return
+			}
+			// Handle msg
+
+		default:
+			log.Println("Unknown action type:", root.ActionType)
+		}
+
+		// TODO: Handle different action types from user
 	}
 }

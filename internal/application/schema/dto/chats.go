@@ -4,10 +4,10 @@ import (
 	"chat-service/internal/application/schema/resources"
 )
 
-type GetUserChatsPayload struct {
+type RequestUserChatsPayload struct {
 	Items []resources.Chat `json:"items"`
 }
 
-func (s GetUserChatsPayload) GetActionType() resources.ActionType {
-	return "GetChats"
+func (s RequestUserChatsPayload) GetActionType() resources.ActionType {
+	return resources.REQUEST_CHATS
 }

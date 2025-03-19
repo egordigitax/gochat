@@ -62,11 +62,11 @@ func (c *MessageClient) SendMessage(
 	}
 }
 
-func (c *MessageClient) GetMessage(
+func (c *MessageClient) RequestMessage(
 	msg resources.Message,
 ) error {
 
-	data := dto.GetMessagePayload{
+	data := dto.RequestMessagePayload{
 		AuthorUid: msg.AuthorUid,
 		ChatUid:   msg.ChatUid,
 		Text:      msg.Text,
@@ -78,19 +78,18 @@ func (c *MessageClient) GetMessage(
 	return nil
 }
 
-func (c *MessageClient) GetMessagesHistory(limit, offset int) {
+func (c *MessageClient) RequestMessageHistory(limit, offset int) {
 	history, err := c.Hub.messages.GetMessagesHistory(c.ChatUid, limit, offset)
 	if err != nil {
 		log.Println("smth wrong:", err)
 		return
 	}
 
-	// TODO: ordering or handle it in GetMessagesHistory
-
+	// TODO: ordering or handle it in RequestMessageHistory
 	slices.Reverse(history)
 
 	for _, msg := range history {
-		data := dto.GetMessagePayload{
+		data := dto.RequestMessagePayload{
 			AuthorUid: msg.UserUid,
 			ChatUid:   msg.ChatUid,
 			Text:      msg.Text,

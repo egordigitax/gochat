@@ -59,7 +59,7 @@ func (h *ChatsHub) StartPumpChats() {
 				}
 				for _, user := range userUids {
 					if client, ok := h.clients[user]; ok {
-						client.GetChats()
+						client.RequestChats()
 					}
 				}
 				delete(chats, chat)
@@ -73,7 +73,7 @@ func (h *ChatsHub) RegisterClient(client *ChatsClient) {
 	h.clients[client.UserId] = client
 	h.mu.Unlock()
 
-	client.GetChats()
+	client.RequestChats()
 }
 
 func (h *ChatsHub) UnregisterClient(client *ChatsClient) {

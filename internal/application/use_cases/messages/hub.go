@@ -50,7 +50,7 @@ func (h *MessageHub) StartPumpMessages() {
 		h.mu.RLock()
 		clients := h.clients[msg.ChatUid]
 		for _, user := range clients {
-			err := user.GetMessage(resources.Message{
+			err := user.RequestMessage(resources.Message{
 				Username:  msg.UserInfo.Nickname,
 				AuthorUid: msg.UserUid,
 				ChatUid:   msg.ChatUid,
@@ -77,7 +77,7 @@ func (h *MessageHub) RegisterClient(client *MessageClient) {
 
 	h.clients[client.ChatUid][client.UserUid] = client
 
-	client.GetMessagesHistory(10, 0)
+	client.RequestMessageHistory(10, 0)
 }
 
 func (h *MessageHub) UnregisterClient(client *MessageClient) {

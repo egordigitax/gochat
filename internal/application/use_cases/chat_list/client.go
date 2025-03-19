@@ -29,14 +29,14 @@ func NewChatsClient(hub *ChatsHub, conn ports.ClientTransport, userId string) *C
 	}
 }
 
-func (c *ChatsClient) GetChats() {
+func (c *ChatsClient) RequestChats() {
 	chats, err := c.Hub.chats.GetChatsByUserUid(c.UserId)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	data := dto.GetUserChatsPayload{
+	data := dto.RequestUserChatsPayload{
 		Items: chats,
 	}
 

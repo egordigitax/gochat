@@ -4,6 +4,7 @@ import (
 	"chat-service/internal/application/schema/dto"
 	"chat-service/internal/application/use_cases/chat_list"
 	"chat-service/internal/utils"
+	"encoding/json"
 	"log"
 	"net/http"
 )
@@ -57,7 +58,7 @@ func (c *ChatsWSController) StartClientWrite(client *chat_list.ChatsClient) {
 
 	for msg := range client.Send {
 		// handle different actions and parse to schema
-		message, ok := msg.Data.(dto.GetUserChatsPayload)
+		message, ok := msg.Data.(dto.RequestUserChatsPayload)
 		if !ok {
 			log.Println("[ERROR] wrong type of data")
 			continue
@@ -74,9 +75,18 @@ func (c *ChatsWSController) StartClientWrite(client *chat_list.ChatsClient) {
 			}
 		}
 
-		response := GetChatsResponse{
-			ActionType: "get_chats",
-			Items:      items,
+		data := GetChatsResponse{
+			Items: items,
+		}
+
+		payload, err := json.Marshal(data)
+		if err != nil {
+			log.Println("[ERROR] wrong type of data")
+		}
+
+		response := RootMessage{
+			ActionType: "request_message",
+			RawPayload: payload,
 		}
 
 		if err := client.Conn.WriteJSON(response); err != nil {
