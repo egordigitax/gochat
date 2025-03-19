@@ -57,8 +57,29 @@ func (c *ChatsWSController) StartClientWrite(client *chat_list.ChatsClient) {
 
 	for msg := range client.Send {
 		// handle different actions and parse to schema
-		message := msg.Data.(dto.GetUserChatsPayload)
-		if err := client.Conn.WriteJSON(message); err != nil {
+		message, ok := msg.Data.(dto.GetUserChatsPayload)
+		if !ok {
+			log.Println("[ERROR] wrong type of data")
+			continue
+		}
+
+		items := make([]Chat, len(message.Items))
+		for i, item := range message.Items {
+			items[i] = Chat{
+				Title:       item.Title,
+				UnreadCount: item.UnreadCount,
+				LastMessage: item.LastMessage.Text,
+				LastAuthor:  item.LastMessage.AuthorUid,
+				MediaUrl:    item.MediaUrl,
+			}
+		}
+
+		response := GetChatsResponse{
+			ActionType: "get_chats",
+			Items:      items,
+		}
+
+		if err := client.Conn.WriteJSON(response); err != nil {
 			break
 		}
 	}

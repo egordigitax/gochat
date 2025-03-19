@@ -1,0 +1,44 @@
+namespace fbchat;
+
+enum ActionType : uint8 {
+  UNKNOWN,
+  GET_MESSAGE,
+  SEND_MESSAGE,
+  GET_CHATS
+}
+
+table GetMessageFromClientRequest {
+  text: string;
+}
+
+table SendMessageToClientResponse {
+  text: string;
+  author_id: string;
+  nickname: string;
+  created_at: string;
+}
+
+table Chat {
+  title: string;
+  unread_count: int;
+  last_message: string;
+  last_author: string;
+  media_url: string;
+}
+
+table GetChatsResponse {
+  items: [Chat];
+}
+
+union RootMessagePayload {
+  GetMessageFromClientRequest,
+  SendMessageToClientResponse,
+  GetChatsResponse
+}
+
+table RootMessage {
+  action_type: ActionType;
+  payload: RootMessagePayload;
+}
+
+root_type RootMessage;

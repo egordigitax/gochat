@@ -69,7 +69,7 @@ func (h *MessageHub) RegisterClient(client *MessageClient) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	h.checkIfUserHasPrevConnectionUnsafe(client)
+	// h.checkIfUserHasPrevConnectionUnsafe(client)
 
 	if h.clients[client.ChatUid] == nil {
 		h.clients[client.ChatUid] = make(map[string]*MessageClient)

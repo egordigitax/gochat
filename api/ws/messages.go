@@ -82,11 +82,12 @@ func (m *MessagesWSController) StartClientWrite(
 		// handle different actions and parse to schema
 		data, _ := msg.Data.(dto.GetMessagePayload)
 
-		message := SendMessageToClientPayload{
-			Text:      data.Text,
-			AuthorId:  data.AuthorUid,
-			Nickname:  "implement me",
-			CreatedAt: data.CreatedAt,
+		message := SendMessageToClientResponse{
+			ActionType: ActionType("get_message"),
+			Text:       data.Text,
+			AuthorId:   data.AuthorUid,
+			Nickname:   "implement me",
+			CreatedAt:  data.CreatedAt,
 		}
 
 		if err := client.Conn.WriteJSON(message); err != nil {
@@ -111,7 +112,7 @@ func (m *MessagesWSController) StartClientRead(
 	for {
 
 		// handle different actions and parse to schema
-		var msg GetMessageFromClientPayload
+		var msg GetMessageFromClientRequest
 		err := client.Conn.ReadJSON(&msg)
 		if err != nil {
 			err = client.Conn.WriteJSON(fmt.Sprintf("Error: %s", err))
