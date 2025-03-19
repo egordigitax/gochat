@@ -8,7 +8,6 @@ import (
 	"chat-service/internal/domain/entities"
 	"context"
 	"log"
-	"slices"
 
 	"github.com/spf13/viper"
 )
@@ -66,13 +65,7 @@ func (c *MessageClient) RequestMessage(
 	msg resources.Message,
 ) error {
 
-	data := dto.RequestMessagePayload{
-		AuthorUid: msg.AuthorUid,
-		ChatUid:   msg.ChatUid,
-		Text:      msg.Text,
-		CreatedAt: msg.CreatedAt,
-	}
-
+	data := dto.BuildRequestMessagePayloadFromResources(msg)
 	c.Send <- resources.BuildAction(data)
 
 	return nil
@@ -81,26 +74,16 @@ func (c *MessageClient) RequestMessage(
 func (c *MessageClient) RequestMessageHistory(limit, offset int) {
 	history, err := c.Hub.messages.GetMessagesHistory(c.ChatUid, limit, offset)
 	if err != nil {
-		log.Println("smth wrong:", err)
+		log.Println("error while fetching history:", err)
 		return
 	}
 
-	// TODO: ordering or handle it in RequestMessageHistory
-	slices.Reverse(history)
-
 	for _, msg := range history {
-		data := dto.RequestMessagePayload{
-			AuthorUid: msg.UserUid,
-			ChatUid:   msg.ChatUid,
-			Text:      msg.Text,
-			CreatedAt: msg.CreatedAt,
-		}
-
+		data := dto.BuildRequestMessagePayloadFromEntity(msg)
 		c.Send <- resources.BuildAction(data)
 	}
 }
 
 func (c *MessageClient) GetMe() resources.User {
-	// return c.H
 	panic("implement me")
 }

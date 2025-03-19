@@ -80,12 +80,11 @@ func (m *MessagesWSController) StartClientWrite(
 	}()
 
 	for msg := range client.Send {
-
-		log.Print(msg.Action)
-
+        log.Println(msg.Data)
 		if msg.Action == resources.REQUEST_MESSAGE {
 			actionData, _ := msg.Data.(dto.RequestMessagePayload)
-
+            
+            log.Println(actionData.Text)
 			data := SendMessageToClientResponse{
 				Text:      actionData.Text,
 				AuthorId:  actionData.AuthorUid,

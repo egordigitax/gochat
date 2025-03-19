@@ -36,9 +36,6 @@ func (c *ChatsClient) RequestChats() {
 		return
 	}
 
-	data := dto.RequestUserChatsPayload{
-		Items: chats,
-	}
-
+	data := dto.BuildRequestUserChatsPayloadFromEntities(chats)
 	c.Send <- resources.BuildAction(data)
 }

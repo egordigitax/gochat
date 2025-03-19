@@ -85,7 +85,7 @@ func (c *ChatsWSController) StartClientWrite(client *chat_list.ChatsClient) {
 		}
 
 		response := RootMessage{
-			ActionType: "request_message",
+			ActionType: ActionType(message.GetActionType()),
 			RawPayload: payload,
 		}
 

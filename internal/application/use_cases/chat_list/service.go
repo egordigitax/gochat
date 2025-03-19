@@ -1,7 +1,7 @@
 package chat_list
 
 import (
-	"chat-service/internal/application/schema/resources"
+	"chat-service/internal/domain/entities"
 	"chat-service/internal/domain/repositories"
 )
 
@@ -26,27 +26,19 @@ func (m *ChatsService) CheckIfUserHasAccess(userUid string, chatUid string) (boo
 
 func (m *ChatsService) GetChatsByUserUid(
 	userUid string,
-) ([]resources.Chat, error) {
-
-	var response []resources.Chat
+) ([]entities.Chat, error) {
 
 	chats, err := m.ChatsStorage.GetChatsByUserUid(userUid, 10, 0)
 	if err != nil {
-		return response, err
+		return chats, err
 	}
 
 	err = m.ChatsStorage.FetchChatsLastMessages(&chats)
 	if err != nil {
-		return response, err
+		return chats, err
 	}
 
-	response = make([]resources.Chat, len(chats))
-
-	for i, item := range chats {
-		response[i] = resources.NewChatFromEntity(item)
-	}
-
-	return response, nil
+	return chats, nil
 }
 
 func (m *ChatsService) GetUsersFromChat(chatUid string) ([]string, error) {

@@ -1,7 +1,7 @@
 package utils_test
 
 import (
-	"chat-service/internal/api/utils"
+	"chat-service/internal/utils"
 	"testing"
 )
 

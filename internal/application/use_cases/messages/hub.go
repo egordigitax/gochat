@@ -50,13 +50,9 @@ func (h *MessageHub) StartPumpMessages() {
 		h.mu.RLock()
 		clients := h.clients[msg.ChatUid]
 		for _, user := range clients {
-			err := user.RequestMessage(resources.Message{
-				Username:  msg.UserInfo.Nickname,
-				AuthorUid: msg.UserUid,
-				ChatUid:   msg.ChatUid,
-				Text:      msg.Text,
-				CreatedAt: msg.CreatedAt,
-			})
+			err := user.RequestMessage(
+				resources.NewMessageFromEntity(msg),
+			)
 			if err != nil {
 				log.Println(err)
 			}
