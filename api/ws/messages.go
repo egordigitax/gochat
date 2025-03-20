@@ -13,34 +13,38 @@ import (
 	"time"
 )
 
-type Serializer interface {
-	Serialize(action resources.Action) ([]byte, error)
-	Deserialize(data []byte) (resources.Action, error)
-}
-
 // TODO: Use worker pool instead goroutines directly
 // TODO: Move it to Controller struct
 
 type MessagesWSController struct {
-	hub *messages.MessageHub
+	hub      *messages.MessageHub
+	handlers map[ActionType]HandlerFunc
 }
 
 func NewMessagesWSController(
 	hub *messages.MessageHub,
 ) *MessagesWSController {
+
 	return &MessagesWSController{
 		hub: hub,
 	}
 }
 
 func (m *MessagesWSController) Handle() {
+
 	http.HandleFunc("/messages", func(w http.ResponseWriter, r *http.Request) {
 		m.ServeMessagesWebSocket(w, r)
 	})
+
+	m.handlers = map[ActionType]HandlerFunc{
+		ActionType(resources.SEND_MESSAGE): m.HandleSendMessageAction,
+	}
+
+    // TODO: add responses instead of standalone serializer (?)
 }
 
 func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *http.Request) {
-	userID, err := utils.GetUserIDFromHeader(
+	userId, err := utils.GetUserIDFromHeader(
 		r.Header.Get("Authorization"),
 	)
 
@@ -49,8 +53,8 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 		return
 	}
 
-	chatID := r.URL.Query().Get("chat_id")
-	if chatID == "" {
+	chatId := r.URL.Query().Get("chat_id")
+	if chatId == "" {
 		http.Error(w, "Missing chat_id", http.StatusBadRequest)
 		return
 	}
@@ -66,8 +70,8 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 	client := messages.NewMessagesClient(
 		m.hub,
 		conn,
-		userID,
-		chatID,
+		userId,
+		chatId,
 	)
 
 	m.hub.RegisterClient(client)
@@ -116,11 +120,14 @@ func (m *MessagesWSController) StartClientRead(
 			}
 		}
 
-		switch root.ActionType {
-		case ActionType(resources.SEND_MESSAGE):
-			m.HandleSendMessageAction(ctx, root.RawPayload, client)
-		default:
-			log.Println("Unknown action type:", root.ActionType)
+		handler, ok := m.handlers[root.ActionType]
+		if !ok {
+			log.Println("unknown action type")
+		}
+
+		err = handler(ctx, root.RawPayload, client)
+		if err != nil {
+			log.Println("error while handling: ", root.ActionType)
 		}
 	}
 }
