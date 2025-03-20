@@ -16,9 +16,23 @@ import (
 // TODO: Use worker pool instead goroutines directly
 // TODO: Move it to Controller struct
 
+
+type MessageHandlerFunc func(
+	ctx context.Context,
+	data interface{},
+	client *messages.MessageClient,
+) error
+
+type MessageResponseFunc func(
+	ctx context.Context,
+	data resources.Action,
+	client *messages.MessageClient,
+) error
+
 type MessagesWSController struct {
-	hub      *messages.MessageHub
-	handlers map[ActionType]HandlerFunc
+	hub       *messages.MessageHub
+	handlers  map[ActionType]MessageHandlerFunc
+	responses map[ActionType]MessageResponseFunc
 }
 
 func NewMessagesWSController(
@@ -36,11 +50,15 @@ func (m *MessagesWSController) Handle() {
 		m.ServeMessagesWebSocket(w, r)
 	})
 
-	m.handlers = map[ActionType]HandlerFunc{
+	m.handlers = map[ActionType]MessageHandlerFunc{
 		ActionType(resources.SEND_MESSAGE): m.HandleSendMessageAction,
 	}
 
-    // TODO: add responses instead of standalone serializer (?)
+	m.responses = map[ActionType]MessageResponseFunc{
+		ActionType(resources.REQUEST_MESSAGE): m.ResponseRequestMessageAction,
+	}
+
+	// TODO: add responses instead of standalone serializer (?)
 }
 
 func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *http.Request) {
@@ -83,20 +101,19 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 func (m *MessagesWSController) StartClientWrite(
 	client *messages.MessageClient,
 ) {
+	ctx := context.Background()
 
 	defer func() {
 		client.Hub.UnregisterClient(client)
 	}()
 
 	for msg := range client.Send {
-		response, err := Serialize(msg)
-		if err != nil {
-			log.Println(err)
+		responseHandler, ok := m.responses[ActionType(msg.Action)]
+		if !ok {
+			log.Println("wrong type response recieved")
 		}
-		err = client.Conn.WriteJSON(response)
-		if err != nil {
-			break
-		}
+		responseHandler(ctx, msg, client)
+
 	}
 }
 
@@ -151,4 +168,32 @@ func (m *MessagesWSController) HandleSendMessageAction(
 	})
 
 	return nil
+}
+
+func (m *MessagesWSController) ResponseRequestMessageAction(
+	ctx context.Context,
+	data resources.Action,
+	client *messages.MessageClient,
+) error {
+
+	actionData, ok := data.Data.(dto.RequestMessagePayload)
+	if !ok {
+		client.Conn.WriteJSON("Error while handling RequestMessage")
+	}
+
+	response := SendMessageToClientResponse{
+		Text:      actionData.Text,
+		AuthorId:  actionData.AuthorUid,
+		Nickname:  "unimplemented",
+		CreatedAt: actionData.CreatedAt,
+	}
+
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		client.Conn.WriteJSON(fmt.Sprintf("Error while handling RequestMessage: %s", err.Error()))
+	}
+
+    rootJson, err := PackToRootMessage(jsonResponse, actionData)
+
+	return client.Conn.WriteMessage(1, rootJson)
 }
