@@ -11,11 +11,12 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 // TODO: Use worker pool instead goroutines directly
 // TODO: Move it to Controller struct
-
 
 type MessageHandlerFunc func(
 	ctx context.Context,
@@ -111,7 +112,7 @@ func (m *MessagesWSController) StartClientWrite(
 		responseHandler, ok := m.responses[ActionType(msg.Action)]
 		if !ok {
 			log.Println("wrong type response recieved")
-            continue
+			continue
 		}
 		responseHandler(ctx, msg, client)
 
@@ -141,7 +142,7 @@ func (m *MessagesWSController) StartClientRead(
 		handler, ok := m.handlers[root.ActionType]
 		if !ok {
 			log.Println("unknown action type")
-            continue
+			continue
 		}
 
 		err = handler(ctx, root.RawPayload, client)
@@ -195,7 +196,7 @@ func (m *MessagesWSController) ResponseRequestMessageAction(
 		client.Conn.WriteJSON(fmt.Sprintf("Error while handling RequestMessage: %s", err.Error()))
 	}
 
-    rootJson, err := PackToRootMessage(jsonResponse, actionData)
+	rootJson, err := PackToRootMessage(jsonResponse, actionData)
 
-	return client.Conn.WriteMessage(1, rootJson)
+	return client.Conn.WriteMessage(websocket.TextMessage, rootJson)
 }
