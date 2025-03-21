@@ -75,12 +75,13 @@ func (c *ChatsWSController) StartClientWrite(client *chat_list.ChatsClient) {
 		handler, ok := c.responseHandlers[msg.Action]
 		if !ok {
 			log.Println("wrong action type")
+			continue
 		}
 
-        err := handler(ctx, msg, client)
-        if err != nil {
-            log.Println("error while handling")
-        }
+		err := handler(ctx, msg, client)
+		if err != nil {
+			log.Println("error while handling")
+		}
 	}
 }
 
@@ -111,7 +112,6 @@ func (c *ChatsWSController) ResponseRequestChats(
 
 	bytes := PackRootMessage(
 		fbchat.ActionTypeGET_CHATS,
-		fbchat.RootMessagePayloadGetChatsResponse,
 		payload,
 	)
 

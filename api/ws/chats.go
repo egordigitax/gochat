@@ -86,6 +86,7 @@ func (c *ChatsWSController) StartClientWrite(client *chat_list.ChatsClient) {
 		responseHandler, ok := c.responses[ActionType(msg.Action)]
 		if !ok {
 			log.Println("wrong action type recieved on ChatsWs")
+            continue
 		}
 
 		err := responseHandler(ctx, msg, client)

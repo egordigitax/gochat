@@ -6,23 +6,28 @@ import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
 
+type Serializable interface {
+	Pack(builder *flatbuffers.Builder) flatbuffers.UOffsetT
+}
+
 func PackRootMessage(
 	actionType fbchat.ActionType,
-	payloadType fbchat.RootMessagePayload,
-	payload any,
+	payload Serializable,
 ) []byte {
+
+	payloadBuilder := flatbuffers.NewBuilder(256)
+	payloadOffset := payload.Pack(payloadBuilder)
+	payloadBuilder.Finish(payloadOffset)
+	payloadBytes := payloadBuilder.FinishedBytes()
 
 	builder := flatbuffers.NewBuilder(1024)
 
 	rootMessage := fbchat.RootMessageT{
 		ActionType: actionType,
-		Payload: &fbchat.RootMessagePayloadT{
-			Type:  payloadType,
-			Value: payload,
-		},
+		Payload:    payloadBytes,
 	}
 
-    offset := rootMessage.Pack(builder)
-    builder.Finish(offset)
+	offset := rootMessage.Pack(builder)
+	builder.Finish(offset)
 	return builder.FinishedBytes()
 }

@@ -8,30 +8,26 @@ import (
 
 type RootMessageT struct {
 	ActionType ActionType `json:"action_type"`
-	Payload *RootMessagePayloadT `json:"payload"`
+	Payload []byte `json:"payload"`
 }
 
 func (t *RootMessageT) Pack(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	if t == nil {
 		return 0
 	}
-	payloadOffset := t.Payload.Pack(builder)
-
+	payloadOffset := flatbuffers.UOffsetT(0)
+	if t.Payload != nil {
+		payloadOffset = builder.CreateByteString(t.Payload)
+	}
 	RootMessageStart(builder)
 	RootMessageAddActionType(builder, t.ActionType)
-	if t.Payload != nil {
-		RootMessageAddPayloadType(builder, t.Payload.Type)
-	}
 	RootMessageAddPayload(builder, payloadOffset)
 	return RootMessageEnd(builder)
 }
 
 func (rcv *RootMessage) UnPackTo(t *RootMessageT) {
 	t.ActionType = rcv.ActionType()
-	payloadTable := flatbuffers.Table{}
-	if rcv.Payload(&payloadTable) {
-		t.Payload = rcv.PayloadType().UnPack(payloadTable)
-	}
+	t.Payload = rcv.PayloadBytes()
 }
 
 func (rcv *RootMessage) UnPack() *RootMessageT {
@@ -90,38 +86,51 @@ func (rcv *RootMessage) MutateActionType(n ActionType) bool {
 	return rcv._tab.MutateByteSlot(4, byte(n))
 }
 
-func (rcv *RootMessage) PayloadType() RootMessagePayload {
+func (rcv *RootMessage) Payload(j int) byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
-		return RootMessagePayload(rcv._tab.GetByte(o + rcv._tab.Pos))
+		a := rcv._tab.Vector(o)
+		return rcv._tab.GetByte(a + flatbuffers.UOffsetT(j*1))
 	}
 	return 0
 }
 
-func (rcv *RootMessage) MutatePayloadType(n RootMessagePayload) bool {
-	return rcv._tab.MutateByteSlot(6, byte(n))
+func (rcv *RootMessage) PayloadLength() int {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
+	if o != 0 {
+		return rcv._tab.VectorLen(o)
+	}
+	return 0
 }
 
-func (rcv *RootMessage) Payload(obj *flatbuffers.Table) bool {
-	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
+func (rcv *RootMessage) PayloadBytes() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
 	if o != 0 {
-		rcv._tab.Union(obj, o)
-		return true
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
+func (rcv *RootMessage) MutatePayload(j int, n byte) bool {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(6))
+	if o != 0 {
+		a := rcv._tab.Vector(o)
+		return rcv._tab.MutateByte(a+flatbuffers.UOffsetT(j*1), n)
 	}
 	return false
 }
 
 func RootMessageStart(builder *flatbuffers.Builder) {
-	builder.StartObject(3)
+	builder.StartObject(2)
 }
 func RootMessageAddActionType(builder *flatbuffers.Builder, actionType ActionType) {
 	builder.PrependByteSlot(0, byte(actionType), 0)
 }
-func RootMessageAddPayloadType(builder *flatbuffers.Builder, payloadType RootMessagePayload) {
-	builder.PrependByteSlot(1, byte(payloadType), 0)
-}
 func RootMessageAddPayload(builder *flatbuffers.Builder, payload flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(2, flatbuffers.UOffsetT(payload), 0)
+	builder.PrependUOffsetTSlot(1, flatbuffers.UOffsetT(payload), 0)
+}
+func RootMessageStartPayloadVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
+	return builder.StartVector(1, numElems, 1)
 }
 func RootMessageEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

@@ -30,15 +30,9 @@ table GetChatsResponse {
   items: [Chat];
 }
 
-union RootMessagePayload {
-  GetMessageFromClientRequest,
-  SendMessageToClientResponse,
-  GetChatsResponse
-}
-
 table RootMessage {
   action_type: ActionType;
-  payload: RootMessagePayload;
+  payload: [ubyte];
 }
 
 root_type RootMessage;

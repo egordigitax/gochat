@@ -111,6 +111,7 @@ func (m *MessagesWSController) StartClientWrite(
 		responseHandler, ok := m.responses[ActionType(msg.Action)]
 		if !ok {
 			log.Println("wrong type response recieved")
+            continue
 		}
 		responseHandler(ctx, msg, client)
 
@@ -140,6 +141,7 @@ func (m *MessagesWSController) StartClientRead(
 		handler, ok := m.handlers[root.ActionType]
 		if !ok {
 			log.Println("unknown action type")
+            continue
 		}
 
 		err = handler(ctx, root.RawPayload, client)

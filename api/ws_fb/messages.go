@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"time"
 
-	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/websocket"
 )
 
@@ -49,7 +48,7 @@ func (m *MessagesWSController) Handle() {
 	})
 
 	m.handlers = map[fbchat.ActionType]MessageHandlerFunc{
-		fbchat.ActionTypeSEND_MESSAGE: m.HandleSendMessageAction,
+		fbchat.ActionTypeGET_MESSAGE: m.HandleSendMessageAction,
 	}
 
 	m.responses = map[resources.ActionType]MessageResponseFunc{
@@ -126,20 +125,26 @@ func (m *MessagesWSController) StartClientRead(
 	}()
 
 	for {
-		var root fbchat.RootMessage
 		_, payload, err := client.Conn.ReadMessage()
 		if err != nil {
-			log.Println("error while reading message")
+			log.Println("error while reading message", err)
+			break
 		}
 
-		root.Init(payload, 0)
+		if len(payload) < 4 {
+			continue
+		}
+
+		root := fbchat.GetRootAsRootMessage(payload, 0)
 		handler, ok := m.handlers[root.ActionType()]
 
 		if !ok {
+			// log this to client
 			log.Println("unknown action type")
+			continue
 		}
 
-		err = handler(ctx, &root, client)
+		err = handler(ctx, root, client)
 		if err != nil {
 			log.Println("error while handling: ", root.ActionType())
 		}
@@ -152,11 +157,8 @@ func (m *MessagesWSController) HandleSendMessageAction(
 	client *messages.MessageClient,
 ) error {
 
-	var tbl flatbuffers.Table
-	data.Payload(&tbl)
-
-	var payload fbchat.GetMessageFromClientRequest
-	payload.Init(tbl.Bytes, tbl.Pos)
+	payload := fbchat.GetRootAsGetMessageFromClientRequest(data.PayloadBytes(), 0)
+	log.Println(string(payload.Text()))
 
 	client.SendMessage(ctx, dto.SendMessagePayload{
 		ChatUid:   client.ChatUid,
@@ -188,7 +190,6 @@ func (m *MessagesWSController) ResponseRequestMessageAction(
 
 	bytes := PackRootMessage(
 		fbchat.ActionTypeGET_MESSAGE,
-		fbchat.RootMessagePayloadSendMessageToClientResponse,
 		response,
 	)
 
