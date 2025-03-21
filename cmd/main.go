@@ -32,6 +32,7 @@ func main() {
 
 	fmt.Println(utils.GenerateJWT("51929f93-fd17-4e9d-b38c-31f4c26fa51c"))
 
+
 	if os.Getenv("SWAGGER_HOST") == "" {
 		log.Println("Load ENV from file")
 		err := godotenv.Load(".env")
@@ -90,10 +91,12 @@ func main() {
 	messagesController := ws_api2.NewMessagesWSController(messagesHub)
 	chatsController := ws_api2.NewChatsWSController(chatsHub)
 	fbChatsController := ws_fb.NewChatsWSController(chatsHub)
+    fbMessagesController := ws_fb.NewMessagesWSController(messagesHub)
 
 	messagesController.Handle()
 	chatsController.Handle()
 	fbChatsController.Handle()
+    fbMessagesController.Handle()
 
 	go chatsHub.StartPumpChats()
 	go messagesHub.StartPumpMessages()

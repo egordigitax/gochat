@@ -6,17 +6,21 @@ import (
 	"chat-service/internal/application/schema/resources"
 	"chat-service/internal/application/use_cases/chat_list"
 	"chat-service/internal/utils"
+	"context"
 	"log"
 	"net/http"
 
-	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/websocket"
 )
 
 //TODO: Use worker pool instead goroutines directly
 
+type ChatsHandlerFunc func(ctx context.Context, data interface{}, client *chat_list.ChatsClient) error
+type ChatsResponseFunc func(ctx context.Context, data resources.Action, client *chat_list.ChatsClient) error
+
 type ChatsWSController struct {
-	hub *chat_list.ChatsHub
+	hub              *chat_list.ChatsHub
+	responseHandlers map[resources.ActionType]ChatsResponseFunc
 }
 
 func NewChatsWSController(
@@ -28,6 +32,11 @@ func NewChatsWSController(
 }
 
 func (c *ChatsWSController) Handle() {
+
+	c.responseHandlers = map[resources.ActionType]ChatsResponseFunc{
+		resources.REQUEST_CHATS: c.ResponseRequestChats,
+	}
+
 	http.HandleFunc("/fb/chats", func(w http.ResponseWriter, r *http.Request) {
 		c.ServeChatsWebSocket(w, r)
 	})
@@ -56,51 +65,55 @@ func (c *ChatsWSController) ServeChatsWebSocket(w http.ResponseWriter, r *http.R
 }
 
 func (c *ChatsWSController) StartClientWrite(client *chat_list.ChatsClient) {
+	ctx := context.Background()
+
 	defer func() {
 		c.hub.UnregisterClient(client)
 	}()
 
 	for msg := range client.Send {
-		// handle different actions and parse to schema
+		handler, ok := c.responseHandlers[msg.Action]
+		if !ok {
+			log.Println("wrong action type")
+		}
 
-		if msg.Action == resources.REQUEST_CHATS {
-			message, ok := msg.Data.(dto.RequestUserChatsPayload)
-			if !ok {
-				log.Println("[ERROR] wrong type of data")
-				continue
-			}
+        err := handler(ctx, msg, client)
+        if err != nil {
+            log.Println("error while handling")
+        }
+	}
+}
 
-			items := make([]*fbchat.ChatT, len(message.Items))
-			for i, item := range message.Items {
-				items[i] = &fbchat.ChatT{
-					Title:       item.Title,
-					UnreadCount: int32(item.UnreadCount),
-					LastMessage: item.LastMessage.Text,
-					LastAuthor:  item.LastMessage.AuthorUid,
-					MediaUrl:    item.MediaUrl,
-				}
-			}
+func (c *ChatsWSController) ResponseRequestChats(
+	ctx context.Context,
+	data resources.Action,
+	client *chat_list.ChatsClient,
+) error {
+	actionData, ok := data.Data.(dto.RequestUserChatsPayload)
+	if !ok {
+		log.Println("Got wrong type of RequestUserChatsPayload")
+	}
 
-			data := fbchat.GetChatsResponseT{
-				Items: items,
-			}
-
-			response := fbchat.RootMessageT{
-				ActionType: fbchat.ActionTypeGET_CHATS,
-				Payload: &fbchat.RootMessagePayloadT{
-					Type:  fbchat.RootMessagePayloadGetChatsResponse,
-					Value: &data,
-				},
-			}
-
-			builder := flatbuffers.NewBuilder(1024)
-			payload := response.Pack(builder)
-			builder.Finish(payload)
-			fBytes := builder.FinishedBytes()
-
-			if err := client.Conn.WriteMessage(websocket.BinaryMessage, fBytes); err != nil {
-				break
-			}
+	chats := make([]*fbchat.ChatT, len(actionData.Items))
+	for i, item := range actionData.Items {
+		chats[i] = &fbchat.ChatT{
+			Title:       item.Title,
+			UnreadCount: int32(item.UnreadCount),
+			LastMessage: item.LastMessage.Text,
+			LastAuthor:  item.LastMessage.Username,
+			MediaUrl:    item.MediaUrl,
 		}
 	}
+
+	payload := &fbchat.GetChatsResponseT{
+		Items: chats,
+	}
+
+	bytes := PackRootMessage(
+		fbchat.ActionTypeGET_CHATS,
+		fbchat.RootMessagePayloadGetChatsResponse,
+		payload,
+	)
+
+	return client.Conn.WriteMessage(websocket.BinaryMessage, bytes)
 }

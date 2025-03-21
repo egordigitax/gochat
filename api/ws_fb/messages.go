@@ -1,1 +1,196 @@
 package ws_fb
+
+import (
+	"chat-service/gen/fbchat"
+	"chat-service/internal/application/schema/dto"
+	"chat-service/internal/application/schema/resources"
+	"chat-service/internal/application/use_cases/messages"
+	"chat-service/internal/utils"
+	"context"
+	"log"
+	"net/http"
+	"time"
+
+	flatbuffers "github.com/google/flatbuffers/go"
+	"github.com/gorilla/websocket"
+)
+
+type MessageHandlerFunc func(
+	ctx context.Context,
+	data *fbchat.RootMessage,
+	client *messages.MessageClient,
+) error
+
+type MessageResponseFunc func(
+	ctx context.Context,
+	data resources.Action,
+	client *messages.MessageClient,
+) error
+
+type MessagesWSController struct {
+	hub       *messages.MessageHub
+	handlers  map[fbchat.ActionType]MessageHandlerFunc
+	responses map[resources.ActionType]MessageResponseFunc
+}
+
+func NewMessagesWSController(
+	hub *messages.MessageHub,
+) *MessagesWSController {
+
+	return &MessagesWSController{
+		hub: hub,
+	}
+}
+
+func (m *MessagesWSController) Handle() {
+
+	http.HandleFunc("/fb/messages", func(w http.ResponseWriter, r *http.Request) {
+		m.ServeMessagesWebSocket(w, r)
+	})
+
+	m.handlers = map[fbchat.ActionType]MessageHandlerFunc{
+		fbchat.ActionTypeSEND_MESSAGE: m.HandleSendMessageAction,
+	}
+
+	m.responses = map[resources.ActionType]MessageResponseFunc{
+		resources.REQUEST_MESSAGE: m.ResponseRequestMessageAction,
+	}
+
+	// TODO: add responses instead of standalone serializer (?)
+}
+
+func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *http.Request) {
+	userId, err := utils.GetUserIDFromHeader(
+		r.Header.Get("Authorization"),
+	)
+
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	chatId := r.URL.Query().Get("chat_id")
+	if chatId == "" {
+		http.Error(w, "Missing chat_id", http.StatusBadRequest)
+		return
+	}
+
+	upgrader := utils.GetUpgrader()
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println("WebSocket error:", err)
+		return
+	}
+
+	client := messages.NewMessagesClient(
+		m.hub,
+		conn,
+		userId,
+		chatId,
+	)
+
+	m.hub.RegisterClient(client)
+
+	go m.StartClientWrite(client)
+	go m.StartClientRead(client)
+}
+
+func (m *MessagesWSController) StartClientWrite(
+	client *messages.MessageClient,
+) {
+	ctx := context.Background()
+
+	defer func() {
+		client.Hub.UnregisterClient(client)
+	}()
+
+	for msg := range client.Send {
+		responseHandler, ok := m.responses[msg.Action]
+		if !ok {
+			log.Println("wrong type response recieved")
+		}
+		responseHandler(ctx, msg, client)
+
+	}
+}
+
+func (m *MessagesWSController) StartClientRead(
+	client *messages.MessageClient,
+) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	defer func() {
+		client.Hub.UnregisterClient(client)
+		cancel()
+	}()
+
+	for {
+		var root fbchat.RootMessage
+		_, payload, err := client.Conn.ReadMessage()
+		if err != nil {
+			log.Println("error while reading message")
+		}
+
+		root.Init(payload, 0)
+		handler, ok := m.handlers[root.ActionType()]
+
+		if !ok {
+			log.Println("unknown action type")
+		}
+
+		err = handler(ctx, &root, client)
+		if err != nil {
+			log.Println("error while handling: ", root.ActionType())
+		}
+	}
+}
+
+func (m *MessagesWSController) HandleSendMessageAction(
+	ctx context.Context,
+	data *fbchat.RootMessage,
+	client *messages.MessageClient,
+) error {
+
+	var tbl flatbuffers.Table
+	data.Payload(&tbl)
+
+	var payload fbchat.GetMessageFromClientRequest
+	payload.Init(tbl.Bytes, tbl.Pos)
+
+	client.SendMessage(ctx, dto.SendMessagePayload{
+		ChatUid:   client.ChatUid,
+		AuthorUid: client.UserUid,
+		CreatedAt: time.Now().String(),
+		Text:      string(payload.Text()),
+	})
+
+	return nil
+}
+
+func (m *MessagesWSController) ResponseRequestMessageAction(
+	ctx context.Context,
+	data resources.Action,
+	client *messages.MessageClient,
+) error {
+
+	actionData, ok := data.Data.(dto.RequestMessagePayload)
+	if !ok {
+		client.Conn.WriteJSON("Error while handling RequestMessage")
+	}
+
+	response := &fbchat.SendMessageToClientResponseT{
+		Text:      actionData.Text,
+		AuthorId:  actionData.AuthorUid,
+		Nickname:  "unimplemented",
+		CreatedAt: actionData.CreatedAt,
+	}
+
+	bytes := PackRootMessage(
+		fbchat.ActionTypeGET_MESSAGE,
+		fbchat.RootMessagePayloadSendMessageToClientResponse,
+		response,
+	)
+
+	return client.Conn.WriteMessage(websocket.BinaryMessage, bytes)
+}
