@@ -1,11 +1,11 @@
 package ws_api
 
 import (
-	"chat-service/internal/application/schema/resources"
+	"chat-service/internal/types"
 	"encoding/json"
 )
 
-func PackToRootMessage(jsonData json.RawMessage, dto resources.IAction) ([]byte, error) {
+func PackToRootMessage(jsonData json.RawMessage, dto types.IAction) ([]byte, error) {
 	msg := RootMessage{
 		ActionType: ActionType(dto.GetActionType()),
 		RawPayload: jsonData,

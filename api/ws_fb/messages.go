@@ -2,9 +2,9 @@ package ws_fb
 
 import (
 	"chat-service/gen/fbchat"
-	"chat-service/internal/application/schema/dto"
-	"chat-service/internal/application/schema/resources"
-	"chat-service/internal/application/use_cases/messages"
+	messages2 "chat-service/internal/messages"
+	resources2 "chat-service/internal/types"
+	"chat-service/internal/types/dto"
 	"chat-service/internal/utils"
 	"context"
 	"log"
@@ -17,23 +17,23 @@ import (
 type MessageHandlerFunc func(
 	ctx context.Context,
 	data *fbchat.RootMessage,
-	client *messages.MessageClient,
+	client *messages2.MessageClient,
 ) error
 
 type MessageResponseFunc func(
 	ctx context.Context,
-	data resources.Action,
-	client *messages.MessageClient,
+	data resources2.Action,
+	client *messages2.MessageClient,
 ) error
 
 type MessagesWSController struct {
-	hub       *messages.MessageHub
+	hub       *messages2.MessageHub
 	handlers  map[fbchat.ActionType]MessageHandlerFunc
-	responses map[resources.ActionType]MessageResponseFunc
+	responses map[resources2.ActionType]MessageResponseFunc
 }
 
 func NewMessagesWSController(
-	hub *messages.MessageHub,
+	hub *messages2.MessageHub,
 ) *MessagesWSController {
 
 	return &MessagesWSController{
@@ -51,8 +51,8 @@ func (m *MessagesWSController) Handle() {
 		fbchat.ActionTypeGET_MESSAGE: m.HandleSendMessageAction,
 	}
 
-	m.responses = map[resources.ActionType]MessageResponseFunc{
-		resources.REQUEST_MESSAGE: m.ResponseRequestMessageAction,
+	m.responses = map[resources2.ActionType]MessageResponseFunc{
+		resources2.REQUEST_MESSAGE: m.ResponseRequestMessageAction,
 	}
 
 	// TODO: add responses instead of standalone serializer (?)
@@ -82,7 +82,7 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 		return
 	}
 
-	client := messages.NewMessagesClient(
+	client := messages2.NewMessagesClient(
 		m.hub,
 		conn,
 		userId,
@@ -96,7 +96,7 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 }
 
 func (m *MessagesWSController) StartClientWrite(
-	client *messages.MessageClient,
+	client *messages2.MessageClient,
 ) {
 	ctx := context.Background()
 
@@ -115,7 +115,7 @@ func (m *MessagesWSController) StartClientWrite(
 }
 
 func (m *MessagesWSController) StartClientRead(
-	client *messages.MessageClient,
+	client *messages2.MessageClient,
 ) {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -154,7 +154,7 @@ func (m *MessagesWSController) StartClientRead(
 func (m *MessagesWSController) HandleSendMessageAction(
 	ctx context.Context,
 	data *fbchat.RootMessage,
-	client *messages.MessageClient,
+	client *messages2.MessageClient,
 ) error {
 
 	payload := fbchat.GetRootAsGetMessageFromClientRequest(data.PayloadBytes(), 0)
@@ -172,8 +172,8 @@ func (m *MessagesWSController) HandleSendMessageAction(
 
 func (m *MessagesWSController) ResponseRequestMessageAction(
 	ctx context.Context,
-	data resources.Action,
-	client *messages.MessageClient,
+	data resources2.Action,
+	client *messages2.MessageClient,
 ) error {
 
 	actionData, ok := data.Data.(dto.RequestMessagePayload)

@@ -2,9 +2,9 @@ package ws_fb
 
 import (
 	"chat-service/gen/fbchat"
-	"chat-service/internal/application/schema/dto"
-	"chat-service/internal/application/schema/resources"
-	"chat-service/internal/application/use_cases/chat_list"
+	chat_list2 "chat-service/internal/chat_list"
+	resources2 "chat-service/internal/types"
+	"chat-service/internal/types/dto"
 	"chat-service/internal/utils"
 	"context"
 	"log"
@@ -15,16 +15,16 @@ import (
 
 //TODO: Use worker pool instead goroutines directly
 
-type ChatsHandlerFunc func(ctx context.Context, data interface{}, client *chat_list.ChatsClient) error
-type ChatsResponseFunc func(ctx context.Context, data resources.Action, client *chat_list.ChatsClient) error
+type ChatsHandlerFunc func(ctx context.Context, data interface{}, client *chat_list2.ChatsClient) error
+type ChatsResponseFunc func(ctx context.Context, data resources2.Action, client *chat_list2.ChatsClient) error
 
 type ChatsWSController struct {
-	hub              *chat_list.ChatsHub
-	responseHandlers map[resources.ActionType]ChatsResponseFunc
+	hub              *chat_list2.ChatsHub
+	responseHandlers map[resources2.ActionType]ChatsResponseFunc
 }
 
 func NewChatsWSController(
-	hub *chat_list.ChatsHub,
+	hub *chat_list2.ChatsHub,
 ) *ChatsWSController {
 	return &ChatsWSController{
 		hub: hub,
@@ -33,8 +33,8 @@ func NewChatsWSController(
 
 func (c *ChatsWSController) Handle() {
 
-	c.responseHandlers = map[resources.ActionType]ChatsResponseFunc{
-		resources.REQUEST_CHATS: c.ResponseRequestChats,
+	c.responseHandlers = map[resources2.ActionType]ChatsResponseFunc{
+		resources2.REQUEST_CHATS: c.ResponseRequestChats,
 	}
 
 	http.HandleFunc("/fb/chats", func(w http.ResponseWriter, r *http.Request) {
@@ -57,14 +57,14 @@ func (c *ChatsWSController) ServeChatsWebSocket(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	client := chat_list.NewChatsClient(c.hub, conn, userID)
+	client := chat_list2.NewChatsClient(c.hub, conn, userID)
 
 	c.hub.RegisterClient(client)
 
 	go c.StartClientWrite(client)
 }
 
-func (c *ChatsWSController) StartClientWrite(client *chat_list.ChatsClient) {
+func (c *ChatsWSController) StartClientWrite(client *chat_list2.ChatsClient) {
 	ctx := context.Background()
 
 	defer func() {
@@ -87,8 +87,8 @@ func (c *ChatsWSController) StartClientWrite(client *chat_list.ChatsClient) {
 
 func (c *ChatsWSController) ResponseRequestChats(
 	ctx context.Context,
-	data resources.Action,
-	client *chat_list.ChatsClient,
+	data resources2.Action,
+	client *chat_list2.ChatsClient,
 ) error {
 	actionData, ok := data.Data.(dto.RequestUserChatsPayload)
 	if !ok {

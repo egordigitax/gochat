@@ -3,15 +3,12 @@ package main
 import (
 	ws_api2 "chat-service/api/ws"
 	"chat-service/api/ws_fb"
-	"chat-service/internal/application/use_cases/chat_list"
-	"chat-service/internal/application/use_cases/messages"
-	"chat-service/internal/application/use_cases/save_history"
-	"chat-service/internal/infra/broker"
-	"chat-service/internal/infra/broker/redis_broker"
-	"chat-service/internal/infra/databases/postgres"
-	"chat-service/internal/infra/databases/postgres/postgres_repos"
-	"chat-service/internal/infra/memory"
-	"chat-service/internal/infra/memory/redis_repos"
+	"chat-service/internal/broker"
+	chat_list2 "chat-service/internal/chat_list"
+	"chat-service/internal/memory"
+	messages2 "chat-service/internal/messages"
+	"chat-service/internal/storage/postgres"
+	postgres_repos2 "chat-service/internal/storage/postgres/postgres_repos"
 	"chat-service/internal/utils"
 	"fmt"
 	"log"
@@ -31,7 +28,6 @@ func main() {
 	// uncomment for memory debug via pprof
 
 	fmt.Println(utils.GenerateJWT("51929f93-fd17-4e9d-b38c-31f4c26fa51c"))
-
 
 	if os.Getenv("SWAGGER_HOST") == "" {
 		log.Println("Load ENV from file")
@@ -56,33 +52,33 @@ func main() {
 	redisClient := memory.NewRedisClient()
 	postgresClient := postgres.NewPostgresClient()
 
-	messagesCache := redis_repos.NewRedisMessagesCache(redisClient)
-	chatsCache := redis_repos.NewRedisChatsCache(redisClient)
+	messagesCache := memory.NewRedisMessagesCache(redisClient)
+	chatsCache := memory.NewRedisChatsCache(redisClient)
 
-	messagesStorage := postgres_repos.NewPGMessagesStorage(postgresClient)
-	chatsStorage := postgres_repos.NewPGChatsStorage(postgresClient)
+	messagesStorage := postgres_repos2.NewPGMessagesStorage(postgresClient)
+	chatsStorage := postgres_repos2.NewPGChatsStorage(postgresClient)
 
-	messagesService := messages.NewMessageService(
+	messagesService := messages2.NewMessageService(
 		messagesStorage,
 		messagesCache,
 	)
-	chatsService := chat_list.NewChatsService(
+	chatsService := chat_list2.NewChatsService(
 		chatsStorage,
 		chatsCache,
 	)
 
 	redisBroker := broker.NewRedisBroker()
-	messagesBroker := redis_broker.NewRedisMessagesBroker(redisBroker)
+	messagesBroker := broker.NewRedisMessagesBroker(redisBroker)
 
-	messagesHub := messages.NewMessagesHub(
+	messagesHub := messages2.NewMessagesHub(
 		messagesService,
 		messagesBroker,
 	)
-	chatsHub := chat_list.NewChatsHub(
+	chatsHub := chat_list2.NewChatsHub(
 		chatsService,
 		messagesBroker,
 	)
-	savingHub := save_history.NewSaveMessagesHub(
+	savingHub := messages2.NewSaveMessagesHub(
 		messagesBroker,
 		messagesCache,
 		messagesStorage,
@@ -91,12 +87,12 @@ func main() {
 	messagesController := ws_api2.NewMessagesWSController(messagesHub)
 	chatsController := ws_api2.NewChatsWSController(chatsHub)
 	fbChatsController := ws_fb.NewChatsWSController(chatsHub)
-    fbMessagesController := ws_fb.NewMessagesWSController(messagesHub)
+	fbMessagesController := ws_fb.NewMessagesWSController(messagesHub)
 
 	messagesController.Handle()
 	chatsController.Handle()
 	fbChatsController.Handle()
-    fbMessagesController.Handle()
+	fbMessagesController.Handle()
 
 	go chatsHub.StartPumpChats()
 	go messagesHub.StartPumpMessages()
