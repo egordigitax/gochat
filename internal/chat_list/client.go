@@ -3,7 +3,7 @@ package chat_list
 import (
 	"chat-service/common/ports"
 	"chat-service/internal/types"
-	"chat-service/internal/types/dto"
+	"chat-service/internal/types/actions"
 	"github.com/spf13/viper"
 	"log"
 )
@@ -35,7 +35,6 @@ func (c *ChatsClient) RequestChats() {
 		log.Println(err)
 		return
 	}
-
-	data := dto.BuildRequestUserChatsPayloadFromEntities(chats)
+	data := actions.InitRequestUserChatsAction(chats)
 	c.Send <- types.BuildAction(data)
 }

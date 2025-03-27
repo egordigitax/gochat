@@ -4,7 +4,7 @@ import (
 	"chat-service/gen/fbchat"
 	chat_list2 "chat-service/internal/chat_list"
 	resources2 "chat-service/internal/types"
-	"chat-service/internal/types/dto"
+	"chat-service/internal/types/actions"
 	"chat-service/internal/utils"
 	"context"
 	"log"
@@ -90,19 +90,19 @@ func (c *ChatsWSController) ResponseRequestChats(
 	data resources2.Action,
 	client *chat_list2.ChatsClient,
 ) error {
-	actionData, ok := data.Data.(dto.RequestUserChatsPayload)
+	actionData, ok := data.Data.(actions.RequestUserChatsAction)
 	if !ok {
-		log.Println("Got wrong type of RequestUserChatsPayload")
+		log.Println("Got wrong type of RequestUserChatsAction")
 	}
 
 	chats := make([]*fbchat.ChatT, len(actionData.Items))
 	for i, item := range actionData.Items {
 		chats[i] = &fbchat.ChatT{
 			Title:       item.Title,
-			UnreadCount: int32(item.UnreadCount),
+			UnreadCount: int32(0),
 			LastMessage: item.LastMessage.Text,
-			LastAuthor:  item.LastMessage.Username,
-			MediaUrl:    item.MediaUrl,
+			LastAuthor:  item.LastMessage.UserInfo.Nickname,
+			MediaUrl:    item.MediaURL,
 		}
 	}
 

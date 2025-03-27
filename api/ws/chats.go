@@ -3,7 +3,7 @@ package ws_api
 import (
 	chat_list2 "chat-service/internal/chat_list"
 	resources2 "chat-service/internal/types"
-	"chat-service/internal/types/dto"
+	"chat-service/internal/types/actions"
 	"chat-service/internal/utils"
 	"context"
 	"encoding/json"
@@ -101,19 +101,19 @@ func (c *ChatsWSController) ResponseRequestChats(
 	data resources2.Action,
 	client *chat_list2.ChatsClient,
 ) error {
-	actionData, ok := data.Data.(dto.RequestUserChatsPayload)
+	actionData, ok := data.Data.(actions.RequestUserChatsAction)
 	if !ok {
-		log.Println("Got wrong type of RequestUserChatsPayload")
+		log.Println("Got wrong type of RequestUserChatsAction")
 	}
 
 	chats := make([]Chat, len(actionData.Items))
 	for i, item := range actionData.Items {
 		chats[i] = Chat{
 			Title:       item.Title,
-			UnreadCount: item.UnreadCount,
+			UnreadCount: 0,
 			LastMessage: item.LastMessage.Text,
-			LastAuthor:  item.LastMessage.Username,
-			MediaUrl:    item.MediaUrl,
+			LastAuthor:  item.LastMessage.UserInfo.Nickname,
+			MediaUrl:    item.MediaURL,
 		}
 	}
 
@@ -123,12 +123,12 @@ func (c *ChatsWSController) ResponseRequestChats(
 
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
-		log.Println("failed to marshal payload of RequestUserChatsPayload")
+		log.Println("failed to marshal payload of RequestUserChatsAction")
 	}
 
 	response, err := PackToRootMessage(jsonPayload, actionData)
 	if err != nil {
-		log.Println("failed to pack the root message of RequestUserChatsPayload")
+		log.Println("failed to pack the root message of RequestUserChatsAction")
 	}
 
 	return client.Conn.WriteMessage(websocket.TextMessage, response)

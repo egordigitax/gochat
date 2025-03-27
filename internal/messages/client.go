@@ -4,8 +4,7 @@ import (
 	"chat-service/common/constants"
 	"chat-service/common/ports"
 	"chat-service/internal/types"
-	"chat-service/internal/types/dto"
-	resources2 "chat-service/internal/types/resources"
+	"chat-service/internal/types/actions"
 	"context"
 	"log"
 
@@ -42,7 +41,7 @@ func NewMessagesClient(
 
 func (c *MessageClient) SendMessage(
 	ctx context.Context,
-	msg dto.SendMessagePayload,
+	msg actions.SendMessageAction,
 ) {
 
 	message := types.NewMessage(
@@ -62,10 +61,10 @@ func (c *MessageClient) SendMessage(
 }
 
 func (c *MessageClient) RequestMessage(
-	msg resources2.Message,
+	msg types.Message,
 ) error {
 
-	data := dto.BuildRequestMessagePayloadFromResources(msg)
+	data := actions.InitRequestMessageAction(msg)
 	c.Send <- types.BuildAction(data)
 
 	return nil
@@ -79,11 +78,11 @@ func (c *MessageClient) RequestMessageHistory(limit, offset int) {
 	}
 
 	for _, msg := range history {
-		data := dto.BuildRequestMessagePayloadFromEntity(msg)
+		data := actions.InitRequestMessageAction(msg)
 		c.Send <- types.BuildAction(data)
 	}
 }
 
-func (c *MessageClient) GetMe() resources2.User {
+func (c *MessageClient) GetMe() types.User {
 	panic("implement me")
 }

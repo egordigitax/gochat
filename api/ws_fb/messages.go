@@ -4,7 +4,7 @@ import (
 	"chat-service/gen/fbchat"
 	messages2 "chat-service/internal/messages"
 	resources2 "chat-service/internal/types"
-	"chat-service/internal/types/dto"
+	"chat-service/internal/types/actions"
 	"chat-service/internal/utils"
 	"context"
 	"log"
@@ -160,7 +160,7 @@ func (m *MessagesWSController) HandleSendMessageAction(
 	payload := fbchat.GetRootAsGetMessageFromClientRequest(data.PayloadBytes(), 0)
 	log.Println(string(payload.Text()))
 
-	client.SendMessage(ctx, dto.SendMessagePayload{
+	client.SendMessage(ctx, actions.SendMessageAction{
 		ChatUid:   client.ChatUid,
 		AuthorUid: client.UserUid,
 		CreatedAt: time.Now().String(),
@@ -176,7 +176,7 @@ func (m *MessagesWSController) ResponseRequestMessageAction(
 	client *messages2.MessageClient,
 ) error {
 
-	actionData, ok := data.Data.(dto.RequestMessagePayload)
+	actionData, ok := data.Data.(actions.RequestMessageAction)
 	if !ok {
 		client.Conn.WriteJSON("Error while handling RequestMessage")
 	}

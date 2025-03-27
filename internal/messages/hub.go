@@ -3,7 +3,6 @@ package messages
 import (
 	"chat-service/common/constants"
 	"chat-service/internal/broker"
-	"chat-service/internal/types/resources"
 	"context"
 	"log"
 
@@ -51,7 +50,7 @@ func (h *MessageHub) StartPumpMessages() {
 		clients := h.clients[msg.ChatUid]
 		for _, user := range clients {
 			err := user.RequestMessage(
-				resources.NewMessageFromEntity(msg),
+				msg,
 			)
 			if err != nil {
 				log.Println(err)
