@@ -1,8 +1,8 @@
 package ws_api
 
 import (
-	chat_list2 "chat-service/internal/chat_list"
-	resources2 "chat-service/internal/types"
+	"chat-service/internal/chat_list"
+	"chat-service/internal/types"
 	"chat-service/internal/types/actions"
 	"chat-service/internal/utils"
 	"context"
@@ -18,23 +18,23 @@ import (
 type ChatsHandlerFunc func(
 	ctx context.Context,
 	data interface{},
-	client *chat_list2.ChatsClient,
+	client *chat_list.ChatsClient,
 ) error
 
 type ChatsResponseFunc func(
 	ctx context.Context,
-	data resources2.Action,
-	client *chat_list2.ChatsClient,
+	data types.Action,
+	client *chat_list.ChatsClient,
 ) error
 
 type ChatsWSController struct {
-	hub       *chat_list2.ChatsHub
+	hub       *chat_list.ChatsHub
 	handlers  map[ActionType]ChatsHandlerFunc
 	responses map[ActionType]ChatsResponseFunc
 }
 
 func NewChatsWSController(
-	hub *chat_list2.ChatsHub,
+	hub *chat_list.ChatsHub,
 ) *ChatsWSController {
 
 	return &ChatsWSController{
@@ -45,7 +45,7 @@ func NewChatsWSController(
 func (c *ChatsWSController) Handle() {
 
 	c.responses = map[ActionType]ChatsResponseFunc{
-		ActionType(resources2.REQUEST_CHATS): c.ResponseRequestChats,
+		ActionType(types.REQUEST_CHATS): c.ResponseRequestChats,
 	}
 
 	http.HandleFunc("/chats", func(w http.ResponseWriter, r *http.Request) {
@@ -68,14 +68,14 @@ func (c *ChatsWSController) ServeChatsWebSocket(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	client := chat_list2.NewChatsClient(c.hub, conn, userID)
+	client := chat_list.NewChatsClient(c.hub, conn, userID)
 
 	c.hub.RegisterClient(client)
 
 	go c.StartClientWrite(client)
 }
 
-func (c *ChatsWSController) StartClientWrite(client *chat_list2.ChatsClient) {
+func (c *ChatsWSController) StartClientWrite(client *chat_list.ChatsClient) {
 	ctx := context.Background()
 
 	defer func() {
@@ -98,8 +98,8 @@ func (c *ChatsWSController) StartClientWrite(client *chat_list2.ChatsClient) {
 
 func (c *ChatsWSController) ResponseRequestChats(
 	ctx context.Context,
-	data resources2.Action,
-	client *chat_list2.ChatsClient,
+	data types.Action,
+	client *chat_list.ChatsClient,
 ) error {
 	actionData, ok := data.Data.(actions.RequestUserChatsAction)
 	if !ok {

@@ -1,8 +1,8 @@
 package ws_api
 
 import (
-	messages2 "chat-service/internal/messages"
-	resources2 "chat-service/internal/types"
+	"chat-service/internal/messages"
+	"chat-service/internal/types"
 	"chat-service/internal/types/actions"
 	"chat-service/internal/utils"
 	"context"
@@ -21,23 +21,23 @@ import (
 type MessageHandlerFunc func(
 	ctx context.Context,
 	data interface{},
-	client *messages2.MessageClient,
+	client *messages.MessageClient,
 ) error
 
 type MessageResponseFunc func(
 	ctx context.Context,
-	data resources2.Action,
-	client *messages2.MessageClient,
+	data types.Action,
+	client *messages.MessageClient,
 ) error
 
 type MessagesWSController struct {
-	hub       *messages2.MessageHub
+	hub       *messages.MessageHub
 	handlers  map[ActionType]MessageHandlerFunc
 	responses map[ActionType]MessageResponseFunc
 }
 
 func NewMessagesWSController(
-	hub *messages2.MessageHub,
+	hub *messages.MessageHub,
 ) *MessagesWSController {
 
 	return &MessagesWSController{
@@ -52,11 +52,11 @@ func (m *MessagesWSController) Handle() {
 	})
 
 	m.handlers = map[ActionType]MessageHandlerFunc{
-		ActionType(resources2.SEND_MESSAGE): m.HandleSendMessageAction,
+		ActionType(types.SEND_MESSAGE): m.HandleSendMessageAction,
 	}
 
 	m.responses = map[ActionType]MessageResponseFunc{
-		ActionType(resources2.REQUEST_MESSAGE): m.ResponseRequestMessageAction,
+		ActionType(types.REQUEST_MESSAGE): m.ResponseRequestMessageAction,
 	}
 
 	// TODO: add responses instead of standalone serializer (?)
@@ -86,7 +86,7 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 		return
 	}
 
-	client := messages2.NewMessagesClient(
+	client := messages.NewMessagesClient(
 		m.hub,
 		conn,
 		userId,
@@ -100,7 +100,7 @@ func (m *MessagesWSController) ServeMessagesWebSocket(w http.ResponseWriter, r *
 }
 
 func (m *MessagesWSController) StartClientWrite(
-	client *messages2.MessageClient,
+	client *messages.MessageClient,
 ) {
 	ctx := context.Background()
 
@@ -120,7 +120,7 @@ func (m *MessagesWSController) StartClientWrite(
 }
 
 func (m *MessagesWSController) StartClientRead(
-	client *messages2.MessageClient,
+	client *messages.MessageClient,
 ) {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -155,7 +155,7 @@ func (m *MessagesWSController) StartClientRead(
 func (m *MessagesWSController) HandleSendMessageAction(
 	ctx context.Context,
 	data interface{},
-	client *messages2.MessageClient,
+	client *messages.MessageClient,
 ) error {
 	var msg GetMessageFromClientRequest
 	if err := json.Unmarshal(data.(json.RawMessage), &msg); err != nil {
@@ -175,8 +175,8 @@ func (m *MessagesWSController) HandleSendMessageAction(
 
 func (m *MessagesWSController) ResponseRequestMessageAction(
 	ctx context.Context,
-	data resources2.Action,
-	client *messages2.MessageClient,
+	data types.Action,
+	client *messages.MessageClient,
 ) error {
 
 	actionData, ok := data.Data.(actions.RequestMessageAction)

@@ -22,7 +22,7 @@ func NewRedisMessagesBroker(
 	}
 }
 
-func (r RedisMessagesBroker) GetMessagesFromQueue(ctx context.Context, topic string) (chan types.Message, error) {
+func (r *RedisMessagesBroker) GetMessagesFromQueue(ctx context.Context, topic string) (chan types.Message, error) {
 	messages := make(chan types.Message, viper.GetInt("app.global_buff"))
 
 	go func() {
@@ -42,16 +42,16 @@ func (r RedisMessagesBroker) GetMessagesFromQueue(ctx context.Context, topic str
 	return messages, nil
 }
 
-func (r RedisMessagesBroker) SendMessageToQueue(ctx context.Context, topic string, msg types.Message) error {
+func (r *RedisMessagesBroker) SendMessageToQueue(ctx context.Context, topic string, msg types.Message) error {
 	return r.redisClient.ToQueue(ctx, topic, msg.ToJSON())
 }
 
 func (r *RedisMessagesBroker) GetMessagesFromChannel(
 	ctx context.Context,
-	chats_uids ...string,
+	chatsUids ...string,
 ) (chan types.Message, error) {
 
-	ch, err := r.redisClient.Subscribe(ctx, chats_uids...)
+	ch, err := r.redisClient.Subscribe(ctx, chatsUids...)
 	if err != nil {
 		return nil, err
 	}

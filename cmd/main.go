@@ -1,14 +1,14 @@
 package main
 
 import (
-	ws_api2 "chat-service/api/ws"
+	"chat-service/api/ws"
 	"chat-service/api/ws_fb"
 	"chat-service/internal/broker"
-	chat_list2 "chat-service/internal/chat_list"
+	"chat-service/internal/chat_list"
 	"chat-service/internal/memory"
-	messages2 "chat-service/internal/messages"
+	"chat-service/internal/messages"
 	"chat-service/internal/storage/postgres"
-	postgres_repos2 "chat-service/internal/storage/postgres/postgres_repos"
+	"chat-service/internal/storage/postgres/postgres_repos"
 	"chat-service/internal/utils"
 	"fmt"
 	"log"
@@ -55,14 +55,14 @@ func main() {
 	messagesCache := memory.NewRedisMessagesCache(redisClient)
 	chatsCache := memory.NewRedisChatsCache(redisClient)
 
-	messagesStorage := postgres_repos2.NewPGMessagesStorage(postgresClient)
-	chatsStorage := postgres_repos2.NewPGChatsStorage(postgresClient)
+	messagesStorage := postgres_repos.NewPGMessagesStorage(postgresClient)
+	chatsStorage := postgres_repos.NewPGChatsStorage(postgresClient)
 
-	messagesService := messages2.NewMessageService(
+	messagesService := messages.NewMessageService(
 		messagesStorage,
 		messagesCache,
 	)
-	chatsService := chat_list2.NewChatsService(
+	chatsService := chat_list.NewChatsService(
 		chatsStorage,
 		chatsCache,
 	)
@@ -70,22 +70,22 @@ func main() {
 	redisBroker := broker.NewRedisBroker()
 	messagesBroker := broker.NewRedisMessagesBroker(redisBroker)
 
-	messagesHub := messages2.NewMessagesHub(
+	messagesHub := messages.NewMessagesHub(
 		messagesService,
 		messagesBroker,
 	)
-	chatsHub := chat_list2.NewChatsHub(
+	chatsHub := chat_list.NewChatsHub(
 		chatsService,
 		messagesBroker,
 	)
-	savingHub := messages2.NewSaveMessagesHub(
+	savingHub := messages.NewSaveMessagesHub(
 		messagesBroker,
 		messagesCache,
 		messagesStorage,
 	)
 
-	messagesController := ws_api2.NewMessagesWSController(messagesHub)
-	chatsController := ws_api2.NewChatsWSController(chatsHub)
+	messagesController := ws_api.NewMessagesWSController(messagesHub)
+	chatsController := ws_api.NewChatsWSController(chatsHub)
 	fbChatsController := ws_fb.NewChatsWSController(chatsHub)
 	fbMessagesController := ws_fb.NewMessagesWSController(messagesHub)
 

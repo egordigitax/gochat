@@ -8,17 +8,17 @@ type ChatsStorage interface {
 		limit, offset int,
 	) ([]types.Chat, error)
 	GetChatByUid(
-		chat_uid string,
+		chatUid string,
 	) (types.Chat, error)
 	CheckIfUserHasAccess(
-		user_uid string,
-		chat_uid string,
+		userUid string,
+		chatUid string,
 	) (bool, error)
 	FetchChatsLastMessages(
 		chats *[]types.Chat,
 	) error
 	GetAllUsersFromChatByUid(
-		chat_uid string,
+		chatUid string,
 	) ([]string, error)
 }
 
